@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import { Space_Grotesk, Inter, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
-import Nav from "@/components/Nav";
-import Ticker from "@/components/Ticker";
+import AuthProvider from "@/components/AuthProvider";
+import AuthGate from "@/components/AuthGate";
+import AppShell from "@/components/AppShell";
 
 const spaceGrotesk = Space_Grotesk({
   subsets: ["latin"],
@@ -23,15 +24,30 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" data-theme="dark">
+      <head>
+        {/* Runs before paint so there's no flash of the wrong theme */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function () {
+                try {
+                  var saved = localStorage.getItem('theme');
+                  var theme = saved === 'light' ? 'light' : 'dark';
+                  document.documentElement.setAttribute('data-theme', theme);
+                } catch (e) {}
+              })();
+            `,
+          }}
+        />
+      </head>
       <body className={`${spaceGrotesk.variable} ${inter.variable} ${plexMono.variable} font-body bg-bg text-text min-h-screen`}>
-        <Ticker />
-        <div className="flex">
-          <Nav />
-          <main className="flex-1 min-h-[calc(100vh-40px)] px-6 py-8 md:px-10">
-            {children}
-          </main>
-        </div>
+        <div className="mesh-bg" />
+        <AuthProvider>
+          <AuthGate>
+            <AppShell>{children}</AppShell>
+          </AuthGate>
+        </AuthProvider>
       </body>
     </html>
   );

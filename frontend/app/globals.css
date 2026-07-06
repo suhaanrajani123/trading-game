@@ -2,17 +2,125 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+  Glass fintech cockpit. Two themes, both built on the same glass system —
+  translucent panels over a soft gradient-mesh background, not flat cards
+  on a flat background.
+*/
+:root {
+  --bg-start: 8 10 20;
+  --bg-end: 10 12 24;
+  --surface: 22 26 42;
+  --surface2: 30 35 54;
+  --border: 42 48 70;
+  --text: 241 244 249;
+  --muted: 151 160 181;
+  --gain: 16 185 129;
+  --loss: 225 29 72;
+  --brand: 132 114 255;
+  --brand2: 45 212 255;
+  --xp: 250 199 72;
+
+  --glass-rgb: 15 23 42;
+  --glass-alpha: 0.8;
+  --glass-hover-alpha: 1;
+  --glass-border-rgb: 51 65 85;
+  --glass-border-alpha: 0.8;
+
+  --glow-shadow: 0 0 0 1px rgb(var(--brand) / 0.4), 0 0 24px -4px rgb(var(--brand) / 0.5);
+  --glass-shadow: 0 8px 32px -12px rgb(0 0 0 / 0.45), inset 0 1px 0 0 rgb(255 255 255 / 0.06);
+}
+
+[data-theme="light"] {
+  --bg-start: 245 245 245;
+  --bg-end: 245 245 245;
+  --surface: 255 255 255;
+  --surface2: 248 249 253;
+  --border: 224 227 237;
+  --text: 21 24 35;
+  --muted: 101 109 128;
+  --gain: 16 185 129;
+  --loss: 225 29 72;
+  --brand: 99 82 246;
+  --brand2: 8 145 178;
+  --xp: 168 121 12;
+
+  --glass-rgb: 255 255 255;
+  --glass-alpha: 1;
+  --glass-hover-alpha: 1;
+  --glass-border-rgb: 0 0 0;
+  --glass-border-alpha: 1;
+
+  --glow-shadow: 0 0 0 1px rgb(var(--border)), 0 4px 12px rgb(0 0 0 / 0.05);
+  --glass-shadow: 0 4px 16px -4px rgb(0 0 0 / 0.05), inset 0 1px 0 0 rgb(255 255 255 / 1);
+}
+
+[data-theme="light"] .mesh-bg {
+  display: none;
+}
+
+html, body {
+  height: 100%;
+}
+
 body {
-  background-color: #0B0E11;
-  color: #E8EAED;
+  background: linear-gradient(180deg, rgb(var(--bg-start)) 0%, rgb(var(--bg-end)) 100%);
+  color: rgb(var(--text));
+  position: relative;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* Ambient gradient-mesh glow behind everything — the signature backdrop */
+.mesh-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(560px circle at 12% 8%, rgb(var(--brand) / 0.12), transparent 60%),
+    radial-gradient(480px circle at 88% 18%, rgb(var(--brand2) / 0.08), transparent 60%),
+    radial-gradient(620px circle at 30% 95%, rgb(var(--gain) / 0.05), transparent 60%);
+  animation: mesh-drift 24s ease-in-out infinite alternate;
+}
+@keyframes mesh-drift {
+  from { transform: translate3d(0, 0, 0) scale(1); }
+  to { transform: translate3d(-1.5%, 1.5%, 0) scale(1.03); }
+}
+
+.app-shell {
+  position: relative;
+  z-index: 1;
+}
+
+/* Glass panel — the core visual language of every card in the app */
+.glass {
+  background: rgb(var(--glass-rgb) / var(--glass-alpha));
+  border: 1px solid rgb(var(--glass-border-rgb) / var(--glass-border-alpha));
+  backdrop-filter: blur(20px) saturate(140%);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+}
+.glass-hover {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.glass-hover:hover {
+  background: rgb(var(--glass-rgb) / var(--glass-hover-alpha));
+  border-color: rgb(var(--glass-border-rgb) / 1);
+  transform: translateY(-2px) scale(1.01);
+  box-shadow: 0 10px 40px -10px rgb(0 0 0 / 0.3);
 }
 
 ::selection {
-  background-color: #4C7CF0;
-  color: #0B0E11;
+  background-color: rgb(var(--brand));
+  color: white;
 }
 
-/* respect reduced motion */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: rgb(var(--border));
+  border-radius: 999px;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.001ms !important;
@@ -26,5 +134,21 @@ body {
   to { transform: translateX(-50%); }
 }
 .animate-ticker {
-  animation: ticker-scroll 30s linear infinite;
+  animation: ticker-scroll 34s linear infinite;
+}
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-up {
+  animation: fade-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes glow-pulse {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 1; }
+}
+.animate-glow-pulse {
+  animation: glow-pulse 2.4s ease-in-out infinite;
 }

@@ -22,7 +22,35 @@ def get_quote(symbol: str) -> Dict[str, Any]:
     ticker = yf.Ticker(symbol)
     fast = ticker.fast_info
     price = float(fast["last_price"])
-    prev_close = float(fast.get("previous_close") or price)
+    
+    try:
+        recent_min = ticker.history(period="1d", interval="1m")
+        if not recent_min.empty:
+            price = float(recent_min["Close"].iloc[-1])
+    except Exception:
+        pass
+
+    prev_close = None
+    for key in ("previous_close", "previousClose", "regular_market_previous_close", "regularMarketPreviousClose"):
+        try:
+            val = fast[key]
+        except (KeyError, TypeError):
+            continue
+        if val:
+            prev_close = float(val)
+            break
+
+    if prev_close is None or prev_close == price:
+        try:
+            recent = ticker.history(period="5d", interval="1d")
+            if len(recent) >= 2:
+                prev_close = float(recent["Close"].iloc[-2])
+        except Exception:
+            pass
+
+    if prev_close is None:
+        prev_close = price
+
     change = price - prev_close
     change_pct = (change / prev_close * 100) if prev_close else 0.0
 
@@ -51,7 +79,7 @@ def get_history(symbol: str, period: str = "1mo", interval: str = "1d") -> List[
     candles = []
     for idx, row in hist.iterrows():
         candles.append({
-            "time": idx.strftime("%Y-%m-%d") if interval.endswith("d") else idx.isoformat(),
+            "time": idx.strftime("%Y-%m-%d") if interval.endswith("d") or interval.endswith("wk") or interval.endswith("mo") else idx.isoformat(),
             "open": round(float(row["Open"]), 2),
             "high": round(float(row["High"]), 2),
             "low": round(float(row["Low"]), 2),

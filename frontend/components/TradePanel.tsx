@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { api } from "@/lib/api";
 import { Quote } from "@/types";
+import { ArrowUpRight, ArrowDownRight, CheckCircle2, XCircle } from "lucide-react";
 
 export default function TradePanel({
   symbol,
@@ -43,84 +44,88 @@ export default function TradePanel({
   }
 
   return (
-    <div className="bg-surface border border-border rounded-lg p-5">
-      <h3 className="font-display font-bold text-lg mb-4">Trade {symbol}</h3>
+    <div className="glass rounded-2xl shadow-glass p-5">
+      <h3 className="font-display font-semibold text-base mb-4">Trade {symbol}</h3>
 
       <div className="flex gap-2 mb-4">
         {(["buy", "sell"] as const).map((s) => (
           <button
             key={s}
             onClick={() => setSide(s)}
-            className={`flex-1 py-2 rounded-md text-sm font-medium capitalize transition-colors ${
+            className={`flex-1 py-2.5 rounded-xl text-sm font-medium capitalize transition-all flex items-center justify-center gap-1.5 ${
               side === s
                 ? s === "buy"
-                  ? "bg-gain/15 text-gain border border-gain/40"
-                  : "bg-loss/15 text-loss border border-loss/40"
-                : "bg-bg text-muted border border-border hover:text-text"
+                  ? "bg-gradient-to-br from-gain to-emerald-400 text-white shadow-glass"
+                  : "bg-gradient-to-br from-loss to-rose-400 text-white shadow-glass"
+                : "glass glass-hover text-muted"
             }`}
           >
+            {s === "buy" ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
             {s}
           </button>
         ))}
       </div>
 
-      <div className="flex gap-2 mb-4 text-xs">
+      <div className="flex gap-1.5 mb-4 text-xs glass rounded-lg p-1">
         {(["market", "limit"] as const).map((t) => (
           <button
             key={t}
             onClick={() => setOrderType(t)}
-            className={`px-3 py-1.5 rounded-md capitalize transition-colors ${
-              orderType === t ? "bg-brand/15 text-brand" : "text-muted hover:text-text"
+            className={`flex-1 px-3 py-1.5 rounded-md capitalize transition-colors ${
+              orderType === t ? "bg-brand text-white" : "text-muted hover:text-text"
             }`}
           >
-            {t} order
+            {t}
           </button>
         ))}
       </div>
 
-      <label className="block text-xs text-muted mb-1">Quantity</label>
+      <label className="block text-xs text-muted mb-1.5">Quantity</label>
       <input
         type="number"
         min="0"
         step="1"
         value={quantity}
         onChange={(e) => setQuantity(e.target.value)}
-        className="w-full bg-bg border border-border rounded-md px-3 py-2 mb-4 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-brand"
+        className="w-full bg-surface border border-border rounded-xl px-3 py-2.5 mb-4 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-brand"
       />
 
       {orderType === "limit" && (
         <>
-          <label className="block text-xs text-muted mb-1">Limit price ($)</label>
+          <label className="block text-xs text-muted mb-1.5">Limit price ($)</label>
           <input
             type="number"
             min="0"
             step="0.01"
             value={limitPrice}
             onChange={(e) => setLimitPrice(e.target.value)}
-            className="w-full bg-bg border border-border rounded-md px-3 py-2 mb-4 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-brand"
+            className="w-full bg-surface border border-border rounded-xl px-3 py-2.5 mb-4 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-brand"
           />
         </>
       )}
 
-      <div className="flex justify-between text-xs text-muted mb-4">
-        <span>Current price</span>
-        <span className="font-mono text-text">{quote ? `$${quote.price.toFixed(2)}` : "—"}</span>
-      </div>
-      <div className="flex justify-between text-xs text-muted mb-5">
-        <span>Estimated {side === "buy" ? "cost" : "proceeds"}</span>
-        <span className="font-mono text-text">${estCost.toFixed(2)}</span>
+      <div className="glass rounded-xl p-3 mb-5 space-y-2">
+        <div className="flex justify-between text-xs text-muted">
+          <span>Current price</span>
+          <span className="font-mono text-text">{quote ? `$${quote.price.toFixed(2)}` : "—"}</span>
+        </div>
+        <div className="flex justify-between text-xs text-muted">
+          <span>Estimated {side === "buy" ? "cost" : "proceeds"}</span>
+          <span className="font-mono text-text">${estCost.toFixed(2)}</span>
+        </div>
       </div>
 
       <button
         onClick={handleSubmit}
         disabled={submitting || qtyNum <= 0}
-        className="w-full py-2.5 rounded-md bg-brand text-white font-medium text-sm hover:bg-brand/90 disabled:opacity-50 transition-colors"
+        className="w-full py-3 rounded-xl bg-gradient-to-br from-brand to-brand2 text-white font-medium text-sm hover:opacity-90 disabled:opacity-40 transition-opacity shadow-glow"
       >
         {submitting ? "Placing order…" : `Place ${side} order`}
       </button>
 
       {status && (
-        <p className={`mt-3 text-xs ${status.type === "success" ? "text-gain" : "text-loss"}`}>
+        <p className={`mt-3 text-xs flex items-center gap-1.5 ${status.type === "success" ? "text-gain" : "text-loss"}`}>
+          {status.type === "success" ? <CheckCircle2 size={13} /> : <XCircle size={13} />}
           {status.message}
         </p>
       )}

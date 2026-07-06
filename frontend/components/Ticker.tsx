@@ -2,8 +2,9 @@
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import { Quote } from "@/types";
+import { ArrowUp, ArrowDown } from "lucide-react";
 
-const TICKER_SYMBOLS = ["AAPL", "MSFT", "GOOGL", "TSLA", "NVDA", "AMZN", "SPY"];
+const TICKER_SYMBOLS = ["AAPL", "MSFT", "GOOGL", "TSLA", "NVDA", "AMZN", "SPY", "META"];
 
 export default function Ticker() {
   const [quotes, setQuotes] = useState<Quote[]>([]);
@@ -30,22 +31,23 @@ export default function Ticker() {
   }, []);
 
   if (quotes.length === 0) {
-    return <div className="h-10 border-b border-border bg-surface" />;
+    return <div className="h-[52px] border-b border-border/60 bg-transparent opacity-60" />;
   }
 
-  const items = [...quotes, ...quotes]; // duplicate for seamless loop
+  const items = [...quotes, ...quotes];
 
   return (
-    <div className="h-10 border-b border-border bg-surface overflow-hidden flex items-center">
-      <div className="flex gap-8 animate-ticker whitespace-nowrap px-4">
+    <div className="h-[52px] border-b border-border/60 bg-surface/50 backdrop-blur-md overflow-hidden flex items-center relative z-10">
+      <div className="flex gap-10 animate-ticker whitespace-nowrap px-5">
         {items.map((q, i) => {
           const positive = q.change >= 0;
           return (
-            <span key={`${q.symbol}-${i}`} className="font-mono text-xs flex items-center gap-2">
-              <span className="text-muted">{q.symbol}</span>
-              <span>${q.price.toFixed(2)}</span>
-              <span className={positive ? "text-gain" : "text-loss"}>
-                {positive ? "▲" : "▼"} {Math.abs(q.change_percent).toFixed(2)}%
+            <span key={`${q.symbol}-${i}`} className="font-mono text-xs flex items-center gap-2.5">
+              <span className="text-muted font-medium">{q.symbol}</span>
+              <span className="text-text">${q.price.toFixed(2)}</span>
+              <span className={`flex items-center gap-0.5 ${positive ? "text-gain" : "text-loss"}`}>
+                {positive ? <ArrowUp size={11} /> : <ArrowDown size={11} />}
+                {Math.abs(q.change_percent).toFixed(2)}%
               </span>
             </span>
           );

@@ -20,7 +20,7 @@ def list_levels(db: Session = Depends(get_db)):
 
     out = []
     for lvl in LEVELS:
-        locked = lvl["id"] > 1 and (lvl["id"] - 1) not in completed_ids
+        locked = False
         out.append(LevelOut(
             id=lvl["id"], title=lvl["title"], description=lvl["description"],
             lesson=lvl["lesson"], unlocks=lvl["unlocks"], xp_reward=lvl["xp_reward"],

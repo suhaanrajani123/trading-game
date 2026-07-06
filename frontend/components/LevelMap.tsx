@@ -1,5 +1,6 @@
 "use client";
 import { GameLevel } from "@/types";
+import { Check, Lock } from "lucide-react";
 
 export default function LevelMap({
   levels,
@@ -10,13 +11,7 @@ export default function LevelMap({
 }) {
   return (
     <div className="relative">
-      {/* connecting path line, styled like a price chart trending up */}
-      <svg
-        className="absolute left-6 top-6 bottom-6 w-1 h-[calc(100%-3rem)]"
-        style={{ overflow: "visible" }}
-      >
-        <line x1="0" y1="0" x2="0" y2="100%" stroke="#242A33" strokeWidth="2" />
-      </svg>
+      <div className="absolute left-6 top-6 bottom-6 w-px bg-gradient-to-b from-brand/60 via-border to-border" />
 
       <ul className="space-y-4 relative">
         {levels.map((level) => (
@@ -24,22 +19,22 @@ export default function LevelMap({
             <button
               onClick={() => !level.locked && onSelect(level)}
               disabled={level.locked}
-              className={`relative z-10 w-12 h-12 shrink-0 rounded-full flex items-center justify-center font-mono text-sm font-medium border-2 transition-colors ${
+              className={`relative z-10 w-12 h-12 shrink-0 rounded-full flex items-center justify-center font-mono text-sm font-medium transition-all ${
                 level.completed
-                  ? "bg-gain/15 border-gain text-gain"
+                  ? "bg-gradient-to-br from-gain to-emerald-400 text-white shadow-glass"
                   : level.locked
-                  ? "bg-surface border-border text-muted cursor-not-allowed"
-                  : "bg-brand/15 border-brand text-brand hover:bg-brand/25"
+                  ? "glass text-muted cursor-not-allowed"
+                  : "bg-gradient-to-br from-brand to-brand2 text-white shadow-glow"
               }`}
             >
-              {level.completed ? "✓" : level.id}
+              {level.completed ? <Check size={18} /> : level.locked ? <Lock size={14} /> : level.id}
             </button>
 
             <button
               onClick={() => !level.locked && onSelect(level)}
               disabled={level.locked}
-              className={`flex-1 text-left bg-surface border border-border rounded-lg px-4 py-3 transition-colors ${
-                level.locked ? "opacity-50 cursor-not-allowed" : "hover:border-brand/50"
+              className={`flex-1 text-left glass rounded-2xl shadow-glass px-4 py-3.5 transition-all ${
+                level.locked ? "opacity-50 cursor-not-allowed" : "glass-hover"
               }`}
             >
               <div className="flex items-center justify-between">
@@ -47,7 +42,7 @@ export default function LevelMap({
                 <span className="text-xs text-xp font-mono">+{level.xp_reward} XP</span>
               </div>
               <p className="text-sm text-muted mt-1">{level.description}</p>
-              {level.locked && <p className="text-xs text-muted mt-2">🔒 Complete the previous level to unlock</p>}
+              {level.locked && <p className="text-xs text-muted mt-2">Complete the previous level to unlock</p>}
             </button>
           </li>
         ))}
