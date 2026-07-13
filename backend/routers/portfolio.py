@@ -1,17 +1,17 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import Session
 from database import get_db
 import models
-import market
+import market_service as market
 from schemas import PortfolioOut, PositionOut
 
 router = APIRouter(prefix="/portfolio", tags=["portfolio"])
 
 
-def get_or_create_user(db: Session) -> models.User:
-    user = db.query(models.User).filter(models.User.username == "player1").first()
+def get_or_create_user(db: Session, user_id: str) -> models.User:
+    user = db.query(models.User).filter(models.User.username == user_id).first()
     if not user:
-        user = models.User(username="player1", cash=100_000.0, xp=0, current_level=1)
+        user = models.User(username=user_id, cash=100_000.0, xp=0, current_level=1)
         db.add(user)
         db.commit()
         db.refresh(user)
@@ -19,8 +19,9 @@ def get_or_create_user(db: Session) -> models.User:
 
 
 @router.get("", response_model=PortfolioOut)
-def get_portfolio(db: Session = Depends(get_db)):
-    user = get_or_create_user(db)
+def get_portfolio(request: Request, db: Session = Depends(get_db)):
+    user_id = request.headers.get("X-User-ID", "player1")
+    user = get_or_create_user(db, user_id)
     positions_out = []
     total_market_value = 0.0
 

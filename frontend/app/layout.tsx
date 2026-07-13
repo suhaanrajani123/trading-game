@@ -33,7 +33,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               (function () {
                 try {
                   var saved = localStorage.getItem('theme');
-                  var theme = saved === 'light' ? 'light' : 'dark';
+                  var theme = saved === 'light' ? 'light' : saved === 'default' ? 'default' : 'dark';
                   document.documentElement.setAttribute('data-theme', theme);
                 } catch (e) {}
               })();

@@ -1,18 +1,19 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 from database import get_db
 import models
-import market
+import market_service as market
 from schemas import OrderIn, OrderOut
-from routers.portfolio import get_or_create_user
+from .portfolio import get_or_create_user
 from typing import List
 
 router = APIRouter(prefix="/orders", tags=["orders"])
 
 
 @router.post("", response_model=OrderOut)
-def place_order(order_in: OrderIn, db: Session = Depends(get_db)):
-    user = get_or_create_user(db)
+def place_order(request: Request, order_in: OrderIn, db: Session = Depends(get_db)):
+    user_id = request.headers.get("X-User-ID", "player1")
+    user = get_or_create_user(db, user_id)
     symbol = order_in.symbol.upper()
 
     if order_in.quantity <= 0:
@@ -81,8 +82,9 @@ def place_order(order_in: OrderIn, db: Session = Depends(get_db)):
 
 
 @router.get("", response_model=List[OrderOut])
-def order_history(db: Session = Depends(get_db)):
-    user = get_or_create_user(db)
+def order_history(request: Request, db: Session = Depends(get_db)):
+    user_id = request.headers.get("X-User-ID", "player1")
+    user = get_or_create_user(db, user_id)
     return db.query(models.Order).filter(
         models.Order.user_id == user.id
     ).order_by(models.Order.timestamp.desc()).all()

@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, Query
-import market
+import market_service as market
 from schemas import QuoteOut, CandleOut
 from typing import List
 import traceback

@@ -55,7 +55,32 @@
   --glass-shadow: 0 4px 16px -4px rgb(0 0 0 / 0.05), inset 0 1px 0 0 rgb(255 255 255 / 1);
 }
 
-[data-theme="light"] .mesh-bg {
+[data-theme="default"] {
+  --bg-start: 0 0 0;
+  --bg-end: 0 0 0;
+  --surface: 14 14 14;
+  --surface2: 20 20 20;
+  --border: 39 39 42;
+  --text: 250 250 250;
+  --muted: 161 161 170;
+  --gain: 34 197 94;
+  --loss: 239 68 68;
+  --brand: 50 50 50;
+  --brand2: 20 20 20;
+  --xp: 234 179 8;
+
+  --glass-rgb: 14 14 14;
+  --glass-alpha: 1;
+  --glass-hover-alpha: 1;
+  --glass-border-rgb: 39 39 42;
+  --glass-border-alpha: 1;
+
+  --glow-shadow: none;
+  --glass-shadow: 0 1px 2px rgb(0 0 0 / 0.1);
+}
+
+[data-theme="light"] .mesh-bg,
+[data-theme="default"] .mesh-bg {
   display: none;
 }
 

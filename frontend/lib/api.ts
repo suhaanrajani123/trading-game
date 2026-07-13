@@ -1,11 +1,29 @@
 import { Quote, Candle, Portfolio, OrderRequest, OrderRecord, GameLevel } from "@/types";
+import { supabase } from "@/lib/supabase";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
+function getDeviceId() {
+  if (typeof window === "undefined") return "server-side";
+  let deviceId = localStorage.getItem("deviceId");
+  if (!deviceId) {
+    deviceId = "guest-" + Math.random().toString(36).substring(2, 15);
+    localStorage.setItem("deviceId", deviceId);
+  }
+  return deviceId;
+}
+
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
+  const { data: { session } } = await supabase.auth.getSession();
+  const userId = session?.user?.id || getDeviceId();
+
   const res = await fetch(`${BASE_URL}${path}`, {
     ...options,
-    headers: { "Content-Type": "application/json", ...(options?.headers || {}) },
+    headers: { 
+      "Content-Type": "application/json", 
+      "X-User-ID": userId,
+      ...(options?.headers || {}) 
+    },
     cache: "no-store",
   });
   if (!res.ok) {

@@ -1,19 +1,20 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 from database import get_db
 import models
 from game_data import LEVELS, get_level
 from schemas import LevelOut, CompleteLevelIn
-from routers.portfolio import get_or_create_user
-from datetime import datetime
+from .portfolio import get_or_create_user
+from datetime import datetime, timezone
 from typing import List
 
 router = APIRouter(prefix="/game", tags=["game"])
 
 
 @router.get("/levels", response_model=List[LevelOut])
-def list_levels(db: Session = Depends(get_db)):
-    user = get_or_create_user(db)
+def list_levels(request: Request, db: Session = Depends(get_db)):
+    user_id = request.headers.get("X-User-ID", "player1")
+    user = get_or_create_user(db, user_id)
     completed_ids = {
         p.level_id for p in user.progress if p.completed
     }
@@ -30,8 +31,9 @@ def list_levels(db: Session = Depends(get_db)):
 
 
 @router.post("/complete")
-def complete_level(payload: CompleteLevelIn, db: Session = Depends(get_db)):
-    user = get_or_create_user(db)
+def complete_level(request: Request, payload: CompleteLevelIn, db: Session = Depends(get_db)):
+    user_id = request.headers.get("X-User-ID", "player1")
+    user = get_or_create_user(db, user_id)
     level = get_level(payload.level_id)
     if not level:
         raise HTTPException(status_code=404, detail="Level not found.")
@@ -46,11 +48,11 @@ def complete_level(payload: CompleteLevelIn, db: Session = Depends(get_db)):
 
     if existing:
         existing.completed = True
-        existing.completed_at = datetime.utcnow()
+        existing.completed_at = datetime.now(timezone.utc)
     else:
         db.add(models.LevelProgress(
             user_id=user.id, level_id=payload.level_id,
-            completed=True, completed_at=datetime.utcnow(),
+            completed=True, completed_at=datetime.now(timezone.utc),
         ))
 
     user.xp += level["xp_reward"]
