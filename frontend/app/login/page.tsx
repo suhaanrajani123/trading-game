@@ -3,20 +3,14 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/components/AuthProvider";
-import { TrendingUp, Mail, Lock, ArrowRight, Eye, EyeOff } from "lucide-react";
+import { TrendingUp } from "lucide-react";
 import { useEffect } from "react";
 
 export default function LoginPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
 
-  const [mode, setMode] = useState<"signin" | "signup">("signin");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
-  const [submitting, setSubmitting] = useState(false);
 
   // If already logged in, redirect to dashboard
   useEffect(() => {
@@ -34,38 +28,6 @@ export default function LoginPage() {
       },
     });
     if (error) setError(error.message);
-  }
-
-  async function handleEmailSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setError(null);
-    setSuccess(null);
-    setSubmitting(true);
-
-    try {
-      if (mode === "signup") {
-        const { error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            emailRedirectTo: `${window.location.origin}/`,
-          },
-        });
-        if (error) throw error;
-        setSuccess("Check your email for a confirmation link to activate your account.");
-      } else {
-        const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-        if (error) throw error;
-        router.replace("/");
-      }
-    } catch (err: any) {
-      setError(err.message || "Something went wrong.");
-    } finally {
-      setSubmitting(false);
-    }
   }
 
   if (loading || user) {
@@ -133,103 +95,13 @@ export default function LoginPage() {
               </svg>
               Continue with GitHub
             </button>
-
-
           </div>
 
-          {/* Divider */}
-          <div className="flex items-center gap-4 mb-6">
-            <div className="flex-1 h-px bg-border/60" />
-            <span className="text-xs text-muted uppercase tracking-wider">or continue with email</span>
-            <div className="flex-1 h-px bg-border/60" />
-          </div>
-
-          {/* Email / Password Form */}
-          <form onSubmit={handleEmailSubmit} className="space-y-4">
-            <div className="relative">
-              <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted" />
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Email address"
-                required
-                className="w-full glass rounded-xl pl-10 pr-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand transition-all"
-              />
+          {error && (
+            <div className="rounded-xl bg-loss/10 border border-loss/20 px-4 py-3 text-sm text-loss mb-4">
+              {error}
             </div>
-
-            <div className="relative">
-              <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted" />
-              <input
-                type={showPassword ? "text" : "password"}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Password"
-                required
-                minLength={6}
-                className="w-full glass rounded-xl pl-10 pr-11 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand transition-all"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted hover:text-text transition-colors"
-              >
-                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-              </button>
-            </div>
-
-            {error && (
-              <div className="rounded-xl bg-loss/10 border border-loss/20 px-4 py-3 text-sm text-loss">
-                {error}
-              </div>
-            )}
-
-            {success && (
-              <div className="rounded-xl bg-gain/10 border border-gain/20 px-4 py-3 text-sm text-gain">
-                {success}
-              </div>
-            )}
-
-            <button
-              type="submit"
-              disabled={submitting}
-              className="w-full py-3.5 rounded-xl bg-gradient-to-br from-brand to-brand2 text-white font-medium text-sm shadow-glow hover:opacity-90 transition-opacity flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {submitting ? (
-                <span className="animate-pulse">Please wait…</span>
-              ) : (
-                <>
-                  {mode === "signin" ? "Sign In" : "Create Account"}
-                  <ArrowRight size={16} />
-                </>
-              )}
-            </button>
-          </form>
-
-          {/* Toggle sign-in / sign-up */}
-          <p className="text-center text-sm text-muted mt-6">
-            {mode === "signin" ? (
-              <>
-                Don&apos;t have an account?{" "}
-                <button
-                  onClick={() => { setMode("signup"); setError(null); setSuccess(null); }}
-                  className="text-brand hover:underline font-medium"
-                >
-                  Create one
-                </button>
-              </>
-            ) : (
-              <>
-                Already have an account?{" "}
-                <button
-                  onClick={() => { setMode("signin"); setError(null); setSuccess(null); }}
-                  className="text-brand hover:underline font-medium"
-                >
-                  Sign in
-                </button>
-              </>
-            )}
-          </p>
+          )}
         </div>
 
         {/* Footer */}
