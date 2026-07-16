@@ -1,9 +1,8 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, ArrowLeftRight, GraduationCap, Youtube, TrendingUp, LogOut, ClipboardCheck } from "lucide-react";
+import { LayoutDashboard, ArrowLeftRight, GraduationCap, Youtube, TrendingUp, ClipboardCheck } from "lucide-react";
 import ThemeToggle from "@/components/ThemeToggle";
-import { useAuth } from "@/components/AuthProvider";
 
 const links = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -15,16 +14,6 @@ const links = [
 
 export default function Nav() {
   const pathname = usePathname();
-  const { user, signOut } = useAuth();
-
-  // Extract display name or email
-  const displayName =
-    user?.user_metadata?.full_name ||
-    user?.user_metadata?.name ||
-    user?.email?.split("@")[0] ||
-    "Player";
-  const avatarUrl = user?.user_metadata?.avatar_url;
-  const email = user?.email;
 
   return (
     <nav className="w-64 shrink-0 min-h-[calc(100vh-52px)] px-4 py-8 hidden md:flex md:flex-col border-r border-border/60">
@@ -61,36 +50,6 @@ export default function Nav() {
           );
         })}
       </ul>
-
-      {/* User info + Sign Out */}
-      {user && (
-        <div className="glass rounded-xl px-3 py-3 mb-3">
-          <div className="flex items-center gap-2.5">
-            {avatarUrl ? (
-              <img
-                src={avatarUrl}
-                alt="Avatar"
-                className="w-8 h-8 rounded-md shrink-0 border border-border/60"
-              />
-            ) : (
-              <div className="w-8 h-8 rounded-md bg-slate-800 border border-slate-700 flex items-center justify-center shrink-0 text-white text-xs font-bold">
-                {displayName.charAt(0).toUpperCase()}
-              </div>
-            )}
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-medium truncate">{displayName}</p>
-              {email && <p className="text-[11px] text-muted truncate">{email}</p>}
-            </div>
-          </div>
-          <button
-            onClick={signOut}
-            className="mt-2.5 w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs text-muted hover:text-loss hover:bg-loss/10 transition-all"
-          >
-            <LogOut size={13} />
-            Sign Out
-          </button>
-        </div>
-      )}
 
       <div className="glass rounded-xl px-3 py-3 flex items-center justify-between">
         <span className="text-xs text-muted">Appearance</span>

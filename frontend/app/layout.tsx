@@ -1,8 +1,6 @@
 import type { Metadata } from "next";
 import { Space_Grotesk, Inter, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
-import AuthProvider from "@/components/AuthProvider";
-import AuthGate from "@/components/AuthGate";
 import AppShell from "@/components/AppShell";
 
 const spaceGrotesk = Space_Grotesk({
@@ -43,11 +41,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className={`${spaceGrotesk.variable} ${inter.variable} ${plexMono.variable} font-body bg-bg text-text min-h-screen`}>
         <div className="mesh-bg" />
-        <AuthProvider>
-          <AuthGate>
-            <AppShell>{children}</AppShell>
-          </AuthGate>
-        </AuthProvider>
+        <AppShell>{children}</AppShell>
       </body>
     </html>
   );

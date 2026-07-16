@@ -1,5 +1,4 @@
 import { Quote, Candle, Portfolio, OrderRequest, OrderRecord, GameLevel } from "@/types";
-import { supabase } from "@/lib/supabase";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -14,8 +13,7 @@ function getDeviceId() {
 }
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
-  const { data: { session } } = await supabase.auth.getSession();
-  const userId = session?.user?.id || getDeviceId();
+  const userId = getDeviceId();
 
   const res = await fetch(`${BASE_URL}${path}`, {
     ...options,
