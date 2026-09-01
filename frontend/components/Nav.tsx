@@ -18,7 +18,7 @@ export default function Nav() {
   return (
     <nav className="w-64 shrink-0 min-h-[calc(100vh-52px)] px-4 py-8 hidden md:flex md:flex-col border-r border-border/60">
       <div className="mb-10 flex items-center gap-2.5 px-2">
-        <img src="/logo.png" alt="Tradepath Logo" className="w-10 h-10 rounded-md object-cover shadow-glow" />
+        <img src="/logo.svg" alt="Tradepath Logo" className="w-10 h-10 object-contain drop-shadow-[0_0_8px_rgba(74,222,128,0.3)]" />
         <div>
           <span className="font-display font-bold text-lg tracking-tight leading-none">Tradepath</span>
           <p className="text-[11px] text-muted mt-0.5">Learn the market. Risk nothing.</p>
