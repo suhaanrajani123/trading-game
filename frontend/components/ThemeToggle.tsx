@@ -9,11 +9,11 @@ export default function ThemeToggle() {
 
   useEffect(() => {
     const current = document.documentElement.getAttribute("data-theme") as ThemeMode | null;
-    setTheme(current === "light" ? "light" : current === "default" ? "default" : "dark");
+    setTheme(current === "light" ? "light" : "dark");
   }, []);
 
   function toggle() {
-    const next = theme === "dark" ? "light" : theme === "light" ? "default" : "dark";
+    const next = theme === "dark" ? "light" : "dark";
     setTheme(next);
     document.documentElement.setAttribute("data-theme", next);
     window.localStorage.setItem("theme", next);
@@ -26,7 +26,7 @@ export default function ThemeToggle() {
       className="w-8 h-8 rounded-lg glass glass-hover flex items-center justify-center text-muted hover:text-text transition-colors"
       title={`Switch theme (current: ${theme})`}
     >
-      {theme === "dark" ? <Moon size={14} /> : theme === "light" ? <Sun size={14} /> : <LayoutTemplate size={14} />}
+      {theme === "dark" ? <Moon size={14} /> : <Sun size={14} />}
     </button>
   );
 }

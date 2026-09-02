@@ -35,7 +35,7 @@ export default function StockChart({ candles }: { candles: Candle[] }) {
       },
       width: containerRef.current.clientWidth,
       height: 360,
-      timeScale: { borderColor },
+      timeScale: { borderColor, rightOffset: 0 },
       rightPriceScale: { borderColor },
     });
 

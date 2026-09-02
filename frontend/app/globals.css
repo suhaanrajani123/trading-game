@@ -8,27 +8,27 @@
   on a flat background.
 */
 :root {
-  --bg-start: 8 10 20;
-  --bg-end: 10 12 24;
-  --surface: 22 26 42;
-  --surface2: 30 35 54;
-  --border: 42 48 70;
-  --text: 241 244 249;
-  --muted: 151 160 181;
-  --gain: 16 185 129;
-  --loss: 225 29 72;
-  --brand: 132 114 255;
-  --brand2: 45 212 255;
-  --xp: 250 199 72;
+  --bg-start: 0 0 0;
+  --bg-end: 0 0 0;
+  --surface: 14 14 14;
+  --surface2: 20 20 20;
+  --border: 39 39 42;
+  --text: 250 250 250;
+  --muted: 161 161 170;
+  --gain: 34 197 94;
+  --loss: 239 68 68;
+  --brand: 50 50 50;
+  --brand2: 20 20 20;
+  --xp: 234 179 8;
 
-  --glass-rgb: 15 23 42;
-  --glass-alpha: 0.8;
+  --glass-rgb: 14 14 14;
+  --glass-alpha: 1;
   --glass-hover-alpha: 1;
-  --glass-border-rgb: 51 65 85;
-  --glass-border-alpha: 0.8;
+  --glass-border-rgb: 39 39 42;
+  --glass-border-alpha: 1;
 
-  --glow-shadow: 0 0 0 1px rgb(var(--brand) / 0.4), 0 0 24px -4px rgb(var(--brand) / 0.5);
-  --glass-shadow: 0 8px 32px -12px rgb(0 0 0 / 0.45), inset 0 1px 0 0 rgb(255 255 255 / 0.06);
+  --glow-shadow: none;
+  --glass-shadow: 0 1px 2px rgb(0 0 0 / 0.1);
 }
 
 [data-theme="light"] {
@@ -55,32 +55,7 @@
   --glass-shadow: 0 4px 16px -4px rgb(0 0 0 / 0.05), inset 0 1px 0 0 rgb(255 255 255 / 1);
 }
 
-[data-theme="default"] {
-  --bg-start: 0 0 0;
-  --bg-end: 0 0 0;
-  --surface: 14 14 14;
-  --surface2: 20 20 20;
-  --border: 39 39 42;
-  --text: 250 250 250;
-  --muted: 161 161 170;
-  --gain: 34 197 94;
-  --loss: 239 68 68;
-  --brand: 50 50 50;
-  --brand2: 20 20 20;
-  --xp: 234 179 8;
-
-  --glass-rgb: 14 14 14;
-  --glass-alpha: 1;
-  --glass-hover-alpha: 1;
-  --glass-border-rgb: 39 39 42;
-  --glass-border-alpha: 1;
-
-  --glow-shadow: none;
-  --glass-shadow: 0 1px 2px rgb(0 0 0 / 0.1);
-}
-
-[data-theme="light"] .mesh-bg,
-[data-theme="default"] .mesh-bg {
+.mesh-bg {
   display: none;
 }
 

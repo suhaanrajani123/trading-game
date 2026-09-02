@@ -22,7 +22,7 @@ export default function TradePage() {
     setLoading(true);
     setError(null);
     try {
-      const [q, h] = await Promise.all([api.getQuote(sym), api.getHistory(sym, "5y", "1wk")]);
+      const [q, h] = await Promise.all([api.getQuote(sym), api.getHistory(sym, "5y", "1d")]);
       setQuote(q);
       setCandles(h);
     } catch (err) {

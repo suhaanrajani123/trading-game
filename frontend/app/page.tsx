@@ -36,7 +36,7 @@ export default function DashboardPage() {
   async function loadChart(sym: string) {
     setChartLoading(true);
     try {
-      const [q, h] = await Promise.all([api.getQuote(sym), api.getHistory(sym, "5y", "1wk")]);
+      const [q, h] = await Promise.all([api.getQuote(sym), api.getHistory(sym, "5y", "1d")]);
       setChartQuote(q);
       setChartCandles(h);
       setChartSymbol(sym);
