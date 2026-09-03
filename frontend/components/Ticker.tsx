@@ -34,7 +34,8 @@ export default function Ticker() {
     return <div className="h-[52px] border-b border-border/60 bg-transparent opacity-60" />;
   }
 
-  const items = [...quotes, ...quotes];
+  // Repeat the quotes array enough times so half its width is wider than any screen
+  const items = Array(10).fill(quotes).flat();
 
   return (
     <div className="h-[52px] border-b border-border/60 bg-surface/50 backdrop-blur-md overflow-hidden flex items-center relative z-10">
