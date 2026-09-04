@@ -34,7 +34,7 @@ export default function StockChart({ candles }: { candles: Candle[] }) {
         horzLines: { color: borderColor },
       },
       width: containerRef.current.clientWidth,
-      height: 360,
+      height: 500,
       timeScale: { borderColor, rightOffset: 0 },
       rightPriceScale: { borderColor },
     });
@@ -59,7 +59,7 @@ export default function StockChart({ candles }: { candles: Candle[] }) {
       series.setData(data);
     } else {
       const series = chart.addLineSeries({
-        color: brandColor,
+        color: "rgb(0, 0, 0)",
         lineWidth: 2,
         crosshairMarkerRadius: 4,
       });
@@ -82,15 +82,7 @@ export default function StockChart({ candles }: { candles: Candle[] }) {
       }))
     );
 
-    const total = candles.length;
-    if (total > 52) {
-      chart.timeScale().setVisibleLogicalRange({
-        from: total - 52,
-        to: total - 1,
-      });
-    } else {
-      chart.timeScale().fitContent();
-    }
+    chart.timeScale().fitContent();
     
     chartRef.current = chart;
 

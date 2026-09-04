@@ -1,7 +1,7 @@
 fastapi==0.115.0
 uvicorn[standard]==0.30.6
 sqlalchemy==2.0.35
-yfinance>=0.2.50
+alpaca-py>=0.33.1
 pydantic==2.9.2
 python-multipart==0.0.9
 psycopg[binary]>=3.0.0
