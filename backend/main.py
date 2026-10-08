@@ -1,38 +1,61 @@
 """
-Entrypoint. Run with:  uvicorn main:app --reload --port 8000
+Tradepath API.  Run locally with:  uvicorn main:app --reload --port 8000
 """
-import os
-from fastapi import FastAPI
+from contextlib import asynccontextmanager
+
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
-from database import Base, engine
-import models  # noqa: F401 — needed so Base knows about the tables
-from routers import market, portfolio, orders, game
+import config
+import market_service as market
+from database import init_db
+from routers import game, market as market_router, orders, portfolio
 
-Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="Trading Game API", version="0.1.0")
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    init_db()
+    if config.HAS_ALPACA_KEYS:
+        # Pre-load the ~11k US ticker list so the first search is instant.
+        market.run_in_background(market.warm_assets)
+    else:
+        print("[startup] APCA_API_KEY_ID / APCA_API_SECRET_KEY not set — market data endpoints will return 503.")
+    yield
 
-# Comma-separated list in env var FRONTEND_ORIGINS, e.g.
-# "https://your-app.vercel.app,http://localhost:3000"
-extra_origins = os.getenv("FRONTEND_ORIGINS", "")
-origins = ["http://localhost:3000"] + [o.strip() for o in extra_origins.split(",") if o.strip()]
+
+app = FastAPI(title="Tradepath API", version="2.0.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
-    allow_origin_regex=r"https://.*\.vercel\.app",  # covers Vercel preview URLs
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000", *config.FRONTEND_ORIGINS],
+    allow_origin_regex=r"https://.*\.vercel\.app",  # Vercel preview + production URLs
+    allow_credentials=False,  # auth is a header, not cookies
+    allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
+    allow_headers=["Content-Type", "X-User-ID"],
 )
 
-app.include_router(market.router)
+
+@app.exception_handler(market.MarketDataError)
+async def market_error_handler(_: Request, exc: market.MarketDataError):
+    return JSONResponse(status_code=exc.status_code, content={"detail": str(exc)})
+
+
+app.include_router(market_router.router)
 app.include_router(portfolio.router)
 app.include_router(orders.router)
 app.include_router(game.router)
 
 
-@app.get("/")
+@app.get("/", tags=["meta"])
 def root():
-    return {"status": "ok", "message": "Trading Game API is running."}
+    return {"status": "ok", "service": "tradepath-api", "docs": "/docs"}
+
+
+@app.get("/health", tags=["meta"])
+def health():
+    return {
+        "status": "ok",
+        "market_data": "configured" if config.HAS_ALPACA_KEYS else "missing_keys",
+        "quote_feed": config.ALPACA_QUOTE_FEED,
+    }

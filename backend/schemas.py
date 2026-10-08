@@ -4,26 +4,47 @@ Kept separate from ORM models so the DB can change shape
 without breaking the API contract.
 """
 from pydantic import BaseModel
-from typing import Optional, List
+from typing import List, Optional, Union
 from datetime import datetime
 
 
 class QuoteOut(BaseModel):
     symbol: str
+    name: Optional[str] = None
     price: float
     change: float
     change_percent: float
+    prev_close: Optional[float] = None
+    open: Optional[float] = None
+    high: Optional[float] = None
+    low: Optional[float] = None
+    volume: Optional[float] = None
     currency: str = "USD"
-    is_delayed: bool = True
+    feed: str = "iex"
+    is_delayed: bool = False
+    updated_at: Optional[str] = None
 
 
 class CandleOut(BaseModel):
-    time: str
+    # "YYYY-MM-DD" for daily+ ranges, unix seconds (UTC) for intraday ranges
+    time: Union[str, int]
     open: float
     high: float
     low: float
     close: float
     volume: float
+
+
+class AssetOut(BaseModel):
+    symbol: str
+    name: str
+    exchange: str
+
+
+class MarketStatusOut(BaseModel):
+    is_open: bool
+    next_open: Optional[str] = None
+    next_close: Optional[str] = None
 
 
 class PositionOut(BaseModel):
