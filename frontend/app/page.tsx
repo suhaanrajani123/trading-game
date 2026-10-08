@@ -1,235 +1,148 @@
 "use client";
-import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { ArrowUpRight, BookOpen } from "lucide-react";
+import { useAccount } from "@/components/AccountProvider";
+import AllocationStrip from "@/components/AllocationStrip";
+import HoldingsTable from "@/components/HoldingsTable";
+import ServerError from "@/components/ServerError";
+import Watchlist from "@/components/Watchlist";
 import { api } from "@/lib/api";
-import { Portfolio, Quote, Candle } from "@/types";
-import { generatePreviewCandles } from "@/lib/mockChart";
-import TopMovers from "@/components/TopMovers";
-import StockChart from "@/components/StockChart";
-import TradePanel from "@/components/TradePanel";
-import { gradientForSymbol } from "@/lib/avatarColor";
-import StockLogo from "@/components/StockLogo";
-import { Trophy, ArrowRight, TrendingUp, Wallet, PieChart, Search } from "lucide-react";
+import { useResource } from "@/lib/hooks";
+import { money, moneyWhole, pct, signedMoney, tone } from "@/lib/format";
 
 export default function DashboardPage() {
-  const [portfolio, setPortfolio] = useState<Portfolio | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const { portfolio: p, error } = useAccount();
+  const lessons = useResource(api.lessons, []);
+  const upcoming = lessons.data?.filter((l) => !l.completed).slice(0, 4) ?? [];
+  const nextLesson = upcoming[0] ?? null;
+  const doneCount = lessons.data?.filter((l) => l.completed).length ?? 0;
 
-  // Quick chart state on dashboard
-  const [chartSymbol, setChartSymbol] = useState<string | null>(null);
-  const [chartQuote, setChartQuote] = useState<Quote | null>(null);
-  const [chartCandles, setChartCandles] = useState<Candle[]>([]);
-  const [chartLoading, setChartLoading] = useState(false);
-  const [searchInput, setSearchInput] = useState("");
-
-  const previewCandles = useMemo(() => generatePreviewCandles(90, 100), []);
-
-  async function load() {
-    try {
-      const data = await api.getPortfolio();
-      setPortfolio(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load portfolio.");
-    }
-  }
-
-  async function loadChart(sym: string) {
-    setChartLoading(true);
-    try {
-      const [q, h] = await Promise.all([api.getQuote(sym), api.getHistory(sym, "5y", "1d")]);
-      setChartQuote(q);
-      setChartCandles(h);
-      setChartSymbol(sym);
-    } catch {
-      // silent
-    } finally {
-      setChartLoading(false);
-    }
-  }
-
-  function handleSearch(e: React.FormEvent) {
-    e.preventDefault();
-    const clean = searchInput.trim().toUpperCase();
-    if (clean) loadChart(clean);
-  }
-
-  useEffect(() => {
-    load();
-    const interval = setInterval(load, 30000);
-    return () => clearInterval(interval);
-  }, []);
-
-  const totalPnl = portfolio ? portfolio.positions.reduce((sum, p) => sum + (p.unrealized_pnl || 0), 0) : 0;
-  const pnlPositive = totalPnl >= 0;
-  const displayCandles = chartSymbol ? chartCandles : previewCandles;
+  if (error && !p) return <ServerError message={error} />;
 
   return (
-    <div className="max-w-7xl animate-fade-up">
-      {error && <p className="text-loss text-sm mb-4">{error}</p>}
-
-      {portfolio ? (
-        <>
-          {/* Row 1: Summary Cards */}
-          <div className="grid grid-cols-3 gap-4 mb-6">
-            <div className="glass rounded-2xl shadow-glass p-5 border-l-4 border-brand overflow-hidden group relative">
-              <p className="text-xs font-semibold uppercase tracking-wider text-muted mb-2">Total Portfolio Value</p>
-              <p className="font-mono text-3xl font-bold text-text">
-                ${portfolio.total_equity.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+    <div className="space-y-6 animate-rise">
+      <section className="grid lg:grid-cols-[1fr_340px] gap-6 [&>*]:min-w-0">
+        <div className="panel p-6 md:p-7">
+          <h1 className="text-[15px] font-sans font-medium text-inksoft">Account value</h1>
+          {p ? (
+            <>
+              <p className="num font-display text-[44px] md:text-[56px] leading-none font-semibold tracking-tight mt-2">
+                {money(p.total_equity)}
               </p>
-              <p className={`font-mono text-sm mt-1 ${pnlPositive ? "text-gain" : "text-loss"}`}>
-                {pnlPositive ? "+" : ""}{((totalPnl / (portfolio.total_equity - totalPnl || 1)) * 100).toFixed(2)}% Day Gain
-              </p>
-            </div>
-            <div className={`glass rounded-2xl shadow-glass p-5 border-l-4 ${pnlPositive ? "border-gain" : "border-loss"} overflow-hidden`}>
-              <p className="text-xs font-semibold uppercase tracking-wider text-muted mb-2">Today&apos;s Profit/Loss</p>
-              <p className={`font-mono text-3xl font-bold ${pnlPositive ? "text-gain" : "text-loss"}`}>
-                {pnlPositive ? "+" : ""}${totalPnl.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-              </p>
-            </div>
-            <div className="glass rounded-2xl shadow-glass p-5 border-l-4 border-brand2 overflow-hidden">
-              <p className="text-xs font-semibold uppercase tracking-wider text-muted mb-2">Available Virtual Cash</p>
-              <p className="font-mono text-3xl font-bold text-text">
-                ${portfolio.cash.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-              </p>
-            </div>
-          </div>
-
-          {/* Row 2: Chart + Sidebar */}
-          <div className="grid lg:grid-cols-3 gap-5 mb-6">
-            {/* Main Chart Area */}
-            <div className="lg:col-span-2">
-              <div className="glass rounded-2xl shadow-glass p-5">
-                {/* Search bar */}
-                <form onSubmit={handleSearch} className="flex gap-2 mb-4">
-                  <div className="relative flex-1">
-                    <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted" />
-                    <input
-                      value={searchInput}
-                      onChange={(e) => setSearchInput(e.target.value)}
-                      placeholder="Search AAPL, TSLA..."
-                      className="w-full glass rounded-xl pl-10 pr-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-brand"
-                    />
-                  </div>
-                  <button type="submit" className="px-4 py-2 rounded-xl bg-gradient-to-br from-brand to-brand2 text-white text-sm font-medium hover:opacity-90 transition-opacity">
-                    Go
-                  </button>
-                </form>
-
-                {/* Chart header */}
-                <div className="flex items-baseline justify-between mb-3">
-                  <div>
-                    <h2 className="font-display font-bold text-lg">{chartSymbol ?? "S&P 500 Preview"}</h2>
-                    {!chartSymbol && <p className="text-xs text-muted">Search a ticker to see its live chart</p>}
-                  </div>
-                  {chartQuote && chartSymbol && (
-                    <div className="text-right">
-                      <p className="font-mono text-lg font-semibold">${chartQuote.price.toFixed(2)}</p>
-                      <p className={`font-mono text-xs ${chartQuote.change >= 0 ? "text-gain" : "text-loss"}`}>
-                        {chartQuote.change >= 0 ? "+" : ""}
-                        {chartQuote.change.toFixed(2)} ({chartQuote.change_percent.toFixed(2)}%)
-                      </p>
-                    </div>
-                  )}
-                </div>
-
-                {chartLoading ? (
-                  <div className="flex items-center justify-center py-20">
-                    <p className="text-muted text-sm">Loading chart…</p>
-                  </div>
-                ) : (
-                  <div className={!chartSymbol ? "opacity-50" : ""}>
-                    <StockChart candles={displayCandles} />
-                  </div>
-                )}
+              <div className="mt-3 flex flex-wrap gap-x-6 gap-y-1 text-[15px] num">
+                <p>
+                  <span className={tone(p.day_change)}>
+                    {signedMoney(p.day_change)} ({pct(p.day_change_percent)})
+                  </span>{" "}
+                  <span className="text-inksoft">today</span>
+                </p>
+                <p>
+                  <span className={tone(p.total_return)}>
+                    {signedMoney(p.total_return)} ({pct(p.total_return_percent)})
+                  </span>{" "}
+                  <span className="text-inksoft">since you started with {moneyWhole(p.starting_cash)}</span>
+                </p>
               </div>
+              <div className="mt-7">
+                <AllocationStrip portfolio={p} />
+              </div>
+              <dl className="mt-7 grid grid-cols-2 md:grid-cols-4 gap-y-4 border-t border-line pt-5 num">
+                <Stat label="Cash" value={money(p.cash)} />
+                <Stat label="Buying power" value={money(p.buying_power)} hint={p.reserved_cash > 0 ? `${money(p.reserved_cash)} held for open orders` : undefined} />
+                <Stat label="Invested" value={money(p.total_market_value)} />
+                <Stat label="Realized gains" value={signedMoney(p.total_realized_pnl)} valueClass={tone(p.total_realized_pnl)} />
+              </dl>
+            </>
+          ) : (
+            <div className="mt-3 space-y-4" aria-busy="true">
+              <div className="skeleton h-14 w-72" />
+              <div className="skeleton h-5 w-96 max-w-full" />
+              <div className="skeleton h-3 w-full mt-8" />
             </div>
+          )}
+        </div>
 
-            {/* Right Sidebar */}
-            <div className="space-y-5">
-              <TopMovers />
-
-              {/* Quick Trade */}
-              {chartSymbol ? (
-                <TradePanel symbol={chartSymbol} quote={chartQuote} onOrderPlaced={() => { loadChart(chartSymbol); load(); }} />
-              ) : (
-                <div className="glass rounded-2xl shadow-glass p-5">
-                  <h3 className="font-display font-semibold text-sm mb-3">Quick Trade</h3>
-                  <p className="text-xs text-muted">Search a ticker above to start trading.</p>
+        <aside className="panel p-6 flex flex-col">
+          <div className="flex items-center gap-2 text-sm text-inksoft">
+            <BookOpen size={16} />
+            {lessons.data ? `${doneCount} of ${lessons.data.length} lessons done` : "Lessons"}
+          </div>
+          {nextLesson ? (
+            <>
+              <p className="mt-4 text-[13px] text-muted">Up next, lesson {nextLesson.id}</p>
+              <h2 className="mt-1 text-[22px] leading-tight font-semibold">
+                <span className="marker">{nextLesson.title}</span>
+              </h2>
+              <p className="mt-2 text-sm text-inksoft">{nextLesson.description}</p>
+              <Link href={`/learn?lesson=${nextLesson.id}`} className="btn-primary mt-5 self-start">
+                Start lesson
+              </Link>
+              {upcoming.length > 1 && (
+                <div className="mt-auto pt-6">
+                  <p className="text-[13px] text-muted">After that</p>
+                  <ol className="mt-2 space-y-1.5">
+                    {upcoming.slice(1).map((l) => (
+                      <li key={l.id}>
+                        <Link href={`/learn?lesson=${l.id}`} className="flex gap-3 text-sm text-inksoft hover:text-ink">
+                          <span className="num w-5 text-muted">{l.id}</span>
+                          <span className="truncate">{l.title}</span>
+                        </Link>
+                      </li>
+                    ))}
+                  </ol>
                 </div>
               )}
+            </>
+          ) : lessons.data ? (
+            <>
+              <h2 className="mt-4 text-[22px] font-semibold">You finished every lesson.</h2>
+              <p className="mt-2 text-sm text-inksoft">See how much stuck with the final exam.</p>
+              <Link href="/exam" className="btn-primary mt-auto self-start">Take the exam</Link>
+            </>
+          ) : (
+            <div className="space-y-3 mt-4"><div className="skeleton h-6 w-3/4" /><div className="skeleton h-4 w-full" /></div>
+          )}
+        </aside>
+      </section>
 
-              {/* Level progress */}
-              <Link
-                href="/learn"
-                className="glass glass-hover rounded-2xl shadow-glass p-5 flex items-center justify-between group block"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-xp to-amber-300 flex items-center justify-center">
-                    <Trophy size={18} className="text-white" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium">Level {portfolio.current_level} · 25 lessons</p>
-                    <p className="text-xs text-muted">{portfolio.xp} XP earned</p>
-                  </div>
-                </div>
-                <ArrowRight size={16} className="text-muted group-hover:text-text group-hover:translate-x-0.5 transition-all" />
+      <section className="grid lg:grid-cols-[1fr_340px] gap-6 items-start [&>*]:min-w-0">
+        <div className="panel">
+          <div className="panel-head">
+            <h2 className="panel-title">Your stocks</h2>
+            {p && p.open_orders > 0 && (
+              <Link href="/activity?status=open" className="text-sm text-inksoft hover:text-ink underline underline-offset-2">
+                {p.open_orders} open order{p.open_orders === 1 ? "" : "s"}
               </Link>
-            </div>
-          </div>
-
-          {/* Row 3: My Open Positions */}
-          <div>
-            <h2 className="font-display font-semibold text-base mb-3">My Open Positions</h2>
-            {portfolio.positions.length === 0 ? (
-              <div className="glass rounded-2xl shadow-glass p-8 text-center text-sm text-muted">
-                You don&apos;t own anything yet.{" "}
-                <Link href="/trade" className="text-brand hover:underline">
-                  Place your first trade
-                </Link>{" "}
-                to get started.
-              </div>
-            ) : (
-              <div className="glass rounded-2xl shadow-glass overflow-hidden">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="text-left text-xs font-semibold tracking-wider text-slate-500 uppercase border-b border-border/60">
-                      <th className="px-5 py-3">Ticker</th>
-                      <th className="px-5 py-3">Company</th>
-                      <th className="px-5 py-3 text-right">Qty</th>
-                      <th className="px-5 py-3 text-right">Avg Cost</th>
-                      <th className="px-5 py-3 text-right">Current Price</th>
-                      <th className="px-5 py-3 text-right">Market Value</th>
-                      <th className="px-5 py-3 text-right">Total P/L</th>
-                    </tr>
-                  </thead>
-                  <tbody className="font-mono tabular-nums">
-                    {portfolio.positions.map((p) => (
-                      <tr key={p.symbol} className="border-b border-border/40 last:border-0 hover:bg-white/[0.03] transition-colors">
-                        <td className="px-5 py-3.5 font-medium">
-                          <div className="flex items-center gap-2.5">
-                            <StockLogo symbol={p.symbol} size={28} />
-                            <span className="font-sans font-semibold">{p.symbol}</span>
-                          </div>
-                        </td>
-                        <td className="px-5 py-3.5 text-muted font-sans text-xs">{p.symbol}</td>
-                        <td className="px-5 py-3.5 text-right">{p.quantity}</td>
-                        <td className="px-5 py-3.5 text-right">${p.avg_cost.toFixed(2)}</td>
-                        <td className="px-5 py-3.5 text-right">${p.current_price?.toFixed(2)}</td>
-                        <td className="px-5 py-3.5 text-right">${p.market_value?.toFixed(2)}</td>
-                        <td className={`px-5 py-3.5 text-right font-semibold ${(p.unrealized_pnl || 0) >= 0 ? "text-gain" : "text-loss"}`}>
-                          {(p.unrealized_pnl || 0) >= 0 ? "+" : ""}${p.unrealized_pnl?.toFixed(2)}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
             )}
           </div>
-        </>
-      ) : (
-        !error && <p className="text-muted text-sm">Loading portfolio…</p>
-      )}
+          {!p ? (
+            <div className="px-5 pb-5 space-y-3">{[0, 1, 2].map((i) => <div key={i} className="skeleton h-10" />)}</div>
+          ) : p.positions.length === 0 ? (
+            <div className="px-5 pb-8 pt-2">
+              <p className="text-[15px]">You don&apos;t own any stocks yet.</p>
+              <p className="text-sm text-inksoft mt-1">
+                Pick a company you know, buy a few shares, and watch what the price does over the next few days.
+              </p>
+              <Link href="/trade" className="btn-primary mt-4">
+                Find a stock <ArrowUpRight size={16} />
+              </Link>
+            </div>
+          ) : (
+            <HoldingsTable positions={p.positions} />
+          )}
+        </div>
+        <Watchlist />
+      </section>
+    </div>
+  );
+}
+
+function Stat({ label, value, hint, valueClass = "" }: { label: string; value: string; hint?: string; valueClass?: string }) {
+  return (
+    <div>
+      <dt className="text-[13px] text-inksoft">{label}</dt>
+      <dd className={`mt-0.5 text-[17px] font-medium ${valueClass}`}>{value}</dd>
+      {hint && <dd className="text-[12px] text-muted">{hint}</dd>}
     </div>
   );
 }

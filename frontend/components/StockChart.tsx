@@ -1,125 +1,135 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { createChart, ColorType, IChartApi } from "lightweight-charts";
-import { Candle } from "@/types";
+import {
+  ColorType, CrosshairMode, createChart,
+  type IChartApi, type Time, type UTCTimestamp,
+} from "lightweight-charts";
+import type { Candle } from "@/types";
 
-export default function StockChart({ candles }: { candles: Candle[] }) {
-  const containerRef = useRef<HTMLDivElement>(null);
+type Mode = "line" | "candles";
+
+const cssColor = (name: string, alpha = 1) => {
+  const v = getComputedStyle(document.documentElement).getPropertyValue(`--${name}`).trim() || "128 128 128";
+  return `rgba(${v.split(/\s+/).join(", ")}, ${alpha})`;
+};
+
+const etTime = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", hour: "numeric", minute: "2-digit" });
+const etDay = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", month: "short", day: "numeric" });
+const etFull = new Intl.DateTimeFormat("en-US", {
+  timeZone: "America/New_York", month: "short", day: "numeric", hour: "numeric", minute: "2-digit",
+});
+
+function toDate(t: Time): Date {
+  if (typeof t === "number") return new Date(t * 1000);
+  if (typeof t === "string") return new Date(`${t}T12:00:00Z`);
+  return new Date(Date.UTC(t.year, t.month - 1, t.day, 12));
+}
+
+export default function StockChart({
+  candles,
+  intraday,
+  height = 380,
+}: {
+  candles: Candle[];
+  intraday: boolean;
+  height?: number;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
-  const [chartType, setChartType] = useState<"candle" | "line">("candle");
+  const [mode, setMode] = useState<Mode>("line");
+  const [themeTick, setThemeTick] = useState(0);
 
   useEffect(() => {
-    if (!containerRef.current) return;
+    const bump = () => setThemeTick((n) => n + 1);
+    window.addEventListener("tp:theme-changed", bump);
+    return () => window.removeEventListener("tp:theme-changed", bump);
+  }, []);
 
-    const toRgbString = (spaceSeparated: string, fallback: string) => {
-      const value = spaceSeparated.trim() || fallback;
-      return `rgb(${value.split(/\s+/).join(", ")})`;
-    };
+  useEffect(() => {
+    if (!ref.current || candles.length === 0) return;
+    const rising = candles[candles.length - 1].close >= candles[0].open;
+    const lineColor = cssColor(rising ? "gain" : "loss");
 
-    const textColorRaw = getComputedStyle(document.documentElement).getPropertyValue("--muted").trim();
-    const borderColorRaw = getComputedStyle(document.documentElement).getPropertyValue("--border").trim();
-    const brandColorRaw = getComputedStyle(document.documentElement).getPropertyValue("--brand").trim();
-    const textColor = toRgbString(textColorRaw, "151 160 181");
-    const borderColor = toRgbString(borderColorRaw, "42 48 70");
-    const brandColor = toRgbString(brandColorRaw, "132, 114, 255");
-
-    const chart = createChart(containerRef.current, {
+    const chart = createChart(ref.current, {
+      autoSize: true,
       layout: {
         background: { type: ColorType.Solid, color: "transparent" },
-        textColor,
-        fontFamily: "var(--font-plex-mono)",
+        textColor: cssColor("muted"),
+        fontFamily: '"IBM Plex Sans", system-ui, sans-serif',
+        fontSize: 12,
       },
-      grid: {
-        vertLines: { color: borderColor },
-        horzLines: { color: borderColor },
+      grid: { vertLines: { visible: false }, horzLines: { color: cssColor("line", 0.7) } },
+      rightPriceScale: { borderVisible: false, scaleMargins: { top: 0.08, bottom: 0.22 } },
+      timeScale: {
+        borderVisible: false,
+        timeVisible: intraday,
+        secondsVisible: false,
+        fixLeftEdge: true,
+        fixRightEdge: true,
+        tickMarkFormatter: intraday ? (t: Time) => {
+          const d = toDate(t);
+          const hm = etTime.format(d);
+          return hm === "9:30 AM" ? etDay.format(d) : hm;
+        } : undefined,
       },
-      width: containerRef.current.clientWidth,
-      height: 500,
-      timeScale: { borderColor, rightOffset: 0 },
-      rightPriceScale: { borderColor },
+      crosshair: {
+        mode: CrosshairMode.Magnet,
+        vertLine: { color: cssColor("ink-soft", 0.4), labelBackgroundColor: cssColor("primary") },
+        horzLine: { color: cssColor("ink-soft", 0.4), labelBackgroundColor: cssColor("primary") },
+      },
+      localization: {
+        locale: "en-US",
+        priceFormatter: (p: number) => `$${p.toFixed(2)}`,
+        timeFormatter: (t: Time) => (intraday ? `${etFull.format(toDate(t))} ET` : etDay.format(toDate(t)) + `, ${toDate(t).getUTCFullYear()}`),
+      },
+      handleScale: { axisPressedMouseMove: false },
     });
 
-    const data = candles.map((c) => ({
-      time: c.time,
-      open: c.open,
-      high: c.high,
-      low: c.low,
-      close: c.close,
-      value: c.close, // needed for line series
-    }));
+    const data = candles.map((c) => ({ ...c, time: (typeof c.time === "number" ? (c.time as UTCTimestamp) : c.time) as Time }));
 
-    if (chartType === "candle") {
-      const series = chart.addCandlestickSeries({
-        upColor: "#2dd490",
-        downColor: "#fb6981",
-        borderVisible: false,
-        wickUpColor: "#2dd490",
-        wickDownColor: "#fb6981",
-      });
-      series.setData(data);
-    } else {
-      const series = chart.addLineSeries({
-        color: "rgb(0, 0, 0)",
+    if (mode === "line") {
+      const s = chart.addAreaSeries({
+        lineColor,
         lineWidth: 2,
+        topColor: cssColor(rising ? "gain" : "loss", 0.18),
+        bottomColor: cssColor(rising ? "gain" : "loss", 0.0),
+        priceLineVisible: false,
         crosshairMarkerRadius: 4,
       });
-      series.setData(data);
+      s.setData(data.map((c) => ({ time: c.time, value: c.close })));
+    } else {
+      const s = chart.addCandlestickSeries({
+        upColor: cssColor("gain"),
+        downColor: cssColor("loss"),
+        wickUpColor: cssColor("gain"),
+        wickDownColor: cssColor("loss"),
+        borderVisible: false,
+        priceLineVisible: false,
+      });
+      s.setData(data);
     }
 
-    const volumeSeries = chart.addHistogramSeries({
-      priceFormat: { type: "volume" },
-      priceScaleId: "volume",
-      color: "rgba(132, 114, 255, 0.35)",
-    });
-    chart.priceScale("volume").applyOptions({
-      scaleMargins: { top: 0.85, bottom: 0 },
-    });
-    volumeSeries.setData(
-      candles.map((c) => ({
-        time: c.time,
-        value: c.volume,
-        color: c.close >= c.open ? "rgba(45, 212, 144, 0.35)" : "rgba(251, 105, 129, 0.35)",
-      }))
+    const vol = chart.addHistogramSeries({ priceScaleId: "vol", priceFormat: { type: "volume" }, lastValueVisible: false, priceLineVisible: false });
+    chart.priceScale("vol").applyOptions({ scaleMargins: { top: 0.84, bottom: 0 } });
+    vol.setData(
+      data.map((c) => ({ time: c.time, value: c.volume, color: cssColor(c.close >= c.open ? "gain" : "loss", 0.28) })),
     );
 
     chart.timeScale().fitContent();
-    
     chartRef.current = chart;
-
-    const handleResize = () => {
-      if (containerRef.current) {
-        chart.applyOptions({ width: containerRef.current.clientWidth });
-      }
-    };
-    window.addEventListener("resize", handleResize);
-
     return () => {
-      window.removeEventListener("resize", handleResize);
       chart.remove();
+      chartRef.current = null;
     };
-  }, [candles, chartType]);
+  }, [candles, intraday, mode, themeTick]);
 
   return (
-    <div className="w-full flex flex-col h-full gap-3">
-      <div ref={containerRef} className="w-full flex-1" />
-      <div className="flex justify-start">
-        <div className="glass shadow-glass rounded-lg p-1 flex gap-1 items-center">
-          <button
-            onClick={() => setChartType("candle")}
-            className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
-              chartType === "candle" ? "bg-surface2 text-text shadow-sm" : "text-muted hover:text-text"
-            }`}
-          >
-            Candlestick
-          </button>
-          <button
-            onClick={() => setChartType("line")}
-            className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
-              chartType === "line" ? "bg-surface2 text-text shadow-sm" : "text-muted hover:text-text"
-            }`}
-          >
-            Line Graph
-          </button>
+    <div>
+      <div ref={ref} style={{ height }} className="w-full" />
+      <div className="mt-3 flex justify-end">
+        <div className="seg" role="group" aria-label="Chart style">
+          <button aria-pressed={mode === "line"} onClick={() => setMode("line")}>Line</button>
+          <button aria-pressed={mode === "candles"} onClick={() => setMode("candles")}>Candles</button>
         </div>
       </div>
     </div>
