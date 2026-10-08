@@ -1,48 +1,38 @@
-"use client";
-import { CURATED_VIDEOS, CuratedVideo } from "@/lib/videos";
+import { CURATED_VIDEOS, type CuratedVideo } from "@/lib/videos";
 import VideoCard from "@/components/VideoCard";
-import { Youtube } from "lucide-react";
 
-const CATEGORY_ORDER: CuratedVideo["category"][] = [
-  "Absolute Basics",
-  "Full Courses",
-  "Trusted Educators",
-  "Real Investor Talk",
-];
+export const metadata = { title: "Videos" };
+
+const CATEGORY_ORDER: CuratedVideo["category"][] = ["Absolute Basics", "Full Courses", "Trusted Educators", "Real Investor Talk"];
+const CATEGORY_LABEL: Record<CuratedVideo["category"], string> = {
+  "Absolute Basics": "Start here",
+  "Full Courses": "Full courses",
+  "Trusted Educators": "Trusted educators",
+  "Real Investor Talk": "From real investors",
+};
 
 export default function VideosPage() {
   return (
-    <div className="max-w-6xl animate-fade-up">
-      <div className="flex items-center gap-3 mb-1.5">
-        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-loss to-rose-400 flex items-center justify-center shrink-0">
-          <Youtube size={18} className="text-white" />
-        </div>
-        <h1 className="font-display font-bold text-3xl tracking-tight">Videos</h1>
-      </div>
-      <p className="text-muted text-sm mb-8">
-        10 hand-picked videos for learning the stock market from zero — free, real, and outside this app.
+    <div className="animate-rise">
+      <h1 className="text-[30px] font-semibold">Videos</h1>
+      <p className="mt-1 text-inksoft max-w-prose">
+        Hand-picked free videos for when you&apos;d rather watch than read. They play right here and are hosted on YouTube.
       </p>
 
       {CATEGORY_ORDER.map((category) => {
         const videos = CURATED_VIDEOS.filter((v) => v.category === category);
-        if (videos.length === 0) return null;
+        if (!videos.length) return null;
         return (
-          <div key={category} className="mb-9">
-            <h2 className="font-display font-semibold text-sm text-muted uppercase tracking-wide mb-3">
-              {category}
-            </h2>
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              {videos.map((video) => (
-                <VideoCard key={video.id} video={video} />
-              ))}
+          <section key={category} className="mt-9" aria-labelledby={`cat-${category}`}>
+            <h2 id={`cat-${category}`} className="text-[19px] font-semibold mb-4">{CATEGORY_LABEL[category]}</h2>
+            <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-5">
+              {videos.map((video) => <VideoCard key={video.id} video={video} />)}
             </div>
-          </div>
+          </section>
         );
       })}
 
-      <p className="text-xs text-muted">
-        These are third-party videos hosted on YouTube — not affiliated with or endorsed by Tradepath.
-      </p>
+      <p className="mt-10 text-[13px] text-muted">Third-party videos. Tradepath isn&apos;t affiliated with these creators.</p>
     </div>
   );
 }
