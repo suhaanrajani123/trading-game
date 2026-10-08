@@ -24,7 +24,7 @@ const themeScript = `
 (function () {
   try {
     var saved = localStorage.getItem('theme');
-    var theme = saved === 'light' || saved === 'dark'
+    var theme = saved === 'light' || saved === 'dark' || saved === 'black'
       ? saved
       : (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
     document.documentElement.setAttribute('data-theme', theme);

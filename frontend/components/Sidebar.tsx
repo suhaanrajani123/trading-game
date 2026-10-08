@@ -57,7 +57,7 @@ export default function Sidebar() {
             {done >= TOTAL_LESSONS ? "Every lesson complete" : `Up next: lesson ${level} of ${TOTAL_LESSONS}`}
           </p>
         </Link>
-        <ThemeToggle withLabel />
+        <ThemeToggle />
       </div>
       </div>
     </aside>

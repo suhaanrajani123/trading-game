@@ -30,7 +30,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
               <div className="ml-auto flex items-center gap-2">
                 <MarketStatusPill />
                 <div className="lg:hidden">
-                  <ThemeToggle />
+                  <ThemeToggle compact />
                 </div>
               </div>
             </div>
