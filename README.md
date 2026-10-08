@@ -1,19 +1,39 @@
-# Tradepath — Trading Game / Stock Simulator
+# Tradepath
 
-A gamified stock market simulator: real market prices (via Yahoo Finance), 100% fake
-money, and a level-based curriculum that unlocks trading features as you learn.
+Learn how the stock market works by trading **real, live prices** with
+**$100,000 of practice money**. Fifty short lessons take you from "what is a
+share?" to options and the Fed, and a final exam checks what stuck.
 
-## Quick start (two terminals)
+- **Frontend:** Next.js 14, TypeScript, Tailwind, lightweight-charts (deployed on Vercel)
+- **Backend:** FastAPI, SQLAlchemy, Postgres/SQLite (deployed on Render)
+- **Market data:** Alpaca (free plan): live IEX quotes, split-adjusted candles, ticker search
 
-**Terminal 1 — backend**
+## Features
+
+- Market and limit orders; open limit orders reserve cash and fill when the price gets there
+- Dashboard with account value, today's change, total return and an allocation bar
+- Price charts with 1D to 5Y ranges, line or candlestick
+- Search any US stock or ETF by name or ticker (press `/`)
+- Order history with cancel, plus a "start over" reset
+- 50 lessons with XP and progress, a 21-question final exam, curated videos
+- Light and dark themes, works on phones
+- No sign-up: each browser gets its own anonymous account
+
+## Run it locally
+
+You'll need Python 3.11+, Node 18+, and free Alpaca API keys (see `backend/README.md`).
+
+**Terminal 1: backend**
 ```bash
 cd backend
-python -m venv venv && source venv/bin/activate
+python -m venv venv
+source venv/Scripts/activate      # Windows Git Bash  (macOS/Linux: source venv/bin/activate)
 pip install -r requirements.txt
+cp .env.example .env              # paste your Alpaca keys into .env
 uvicorn main:app --reload --port 8000
 ```
 
-**Terminal 2 — frontend**
+**Terminal 2: frontend**
 ```bash
 cd frontend
 npm install
@@ -21,51 +41,40 @@ cp .env.local.example .env.local
 npm run dev
 ```
 
-Open http://localhost:3000. You start with $100,000 in fake cash.
+Open http://localhost:3000.
 
-## What's already built
-- Live/delayed real stock quotes and price history (yfinance, no API key)
-- Buy/sell with market and limit orders against real prices
-- Portfolio tracking: cash, positions, unrealized P&L
-- Candlestick chart per symbol (lightweight-charts)
-- 6-level learning path with lessons, unlocks, and XP
-- Dark trading-terminal UI with a live scrolling ticker
+## Checks
 
-## Deliberately left out of v1 (next steps)
-- **Auth** — currently single hardcoded player. Add Clerk/NextAuth, then swap
-  `get_or_create_user()` in `backend/routers/portfolio.py` for real user lookup.
-- **Postgres** — SQLite works fine for one player; swap the URL in `backend/database.py`
-  when you add multi-user support.
-- **Leaderboards / multiplayer** — would need a `users` ranking endpoint + a public
-  leaderboard page.
-- **Short selling / options** — Level 6 is a lesson-only scenario right now, no real
-  execution logic yet.
-- **Redis caching** — the in-memory cache in `market.py` is fine for one dev machine;
-  swap in Redis if you deploy for real traffic.
+```bash
+cd backend && pytest                                      # API + trading engine tests
+cd frontend && npm run lint && npm run typecheck && npm run build
+```
 
-## Project structure
+## Deploying
+
+| Service | Settings |
+| --- | --- |
+| Render (backend) | Root `backend`, build `pip install -r requirements.txt`, start `uvicorn main:app --host 0.0.0.0 --port $PORT`. Env: `APCA_API_KEY_ID`, `APCA_API_SECRET_KEY`, `DATABASE_URL` (Postgres), `FRONTEND_ORIGINS` |
+| Vercel (frontend) | Root `frontend`. Env: `NEXT_PUBLIC_API_URL` = your Render URL |
+
+Use Postgres in production: Render's disk is wiped on every deploy, so a SQLite
+file would reset everyone's portfolio. The app adds any new database columns
+on startup, so upgrading an existing database needs no manual migration.
+
+## Project layout
+
 ```
 backend/
-  main.py            FastAPI app, CORS, router wiring
-  database.py         SQLite engine/session
-  models.py            ORM: User, Position, Order, LevelProgress
-  schemas.py           Pydantic request/response shapes
-  market.py            yfinance wrapper + TTL cache
-  game_data.py         The curriculum (levels, lessons, unlocks)
-  routers/
-    market.py           GET /market/quote/:symbol, /market/history/:symbol
-    portfolio.py         GET /portfolio
-    orders.py            POST/GET /orders
-    game.py              GET /game/levels, POST /game/complete
-
+  main.py            App setup, CORS, error handling
+  config.py          All settings (reads backend/.env)
+  market_service.py  Alpaca quotes, candles, search, market clock + caching
+  trading.py         Paper-trading engine (orders, fills, portfolio math)
+  models.py          User, Position, Order, LevelProgress
+  routers/           market, portfolio, orders, game
+  game_data.py       The 50 lessons
+  tests/             pytest suite (offline)
 frontend/
-  app/
-    layout.tsx          Root layout, fonts, nav, ticker
-    page.tsx             Dashboard (portfolio + holdings)
-    trade/page.tsx        Symbol search, chart, trade panel
-    game/page.tsx          Level map + lesson modal
-  components/            Nav, Ticker, PortfolioSummary, StockChart,
-                          TradePanel, LevelMap, LessonModal
-  lib/api.ts             Typed fetch wrapper for the backend
-  types/index.ts          Shared TS types matching backend schemas
+  app/               Dashboard, trade, activity, learn, exam, videos
+  components/        Shell, search, chart, order ticket, tables
+  lib/               API client, formatting, hooks, static data
 ```
