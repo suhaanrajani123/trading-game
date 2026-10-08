@@ -248,7 +248,7 @@ function SymbolView({ symbol }: { symbol: string }) {
         </div>
 
         <div className="mt-5 flex items-center justify-between gap-3">
-          <div className="seg overflow-x-auto max-w-full" role="group" aria-label="Chart range">
+          <div className="seg max-w-full shrink-0" role="group" aria-label="Chart range">
             {RANGES.map((r) => (
               <button key={r} aria-pressed={r === range} onClick={() => setRange(r)}>
                 {r}
@@ -256,7 +256,7 @@ function SymbolView({ symbol }: { symbol: string }) {
             ))}
           </div>
           {q && (
-            <p className="hidden sm:block text-[12.5px] text-muted">
+            <p className="hidden 2xl:block text-[12.5px] text-muted text-right">
               {q.feed === "iex" ? "Live price from IEX" : "Live price"}, candles from Alpaca
             </p>
           )}
