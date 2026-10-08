@@ -40,6 +40,23 @@
   color-scheme: dark;
 }
 
+/* All black: true #000 background for OLED screens, near-white text. */
+[data-theme="black"] {
+  --paper: 0 0 0;
+  --surface: 8 8 8;
+  --surface-2: 22 22 22;
+  --line: 34 34 34;
+  --ink: 245 245 245;
+  --ink-soft: 178 178 178;
+  --muted: 128 128 128;
+  --gain: 52 211 153;
+  --loss: 248 113 113;
+  --marker: 245 203 74;
+  --primary: 245 245 245;
+  --on-primary: 0 0 0;
+  color-scheme: dark;
+}
+
 @layer base {
   html {
     -webkit-text-size-adjust: 100%;
