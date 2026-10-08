@@ -283,7 +283,7 @@ function SymbolView({ symbol }: { symbol: string }) {
         )}
       </section>
 
-      <div className="grid md:grid-cols-2 gap-6 items-start">
+      <div className="grid 2xl:grid-cols-2 gap-6 items-start">
         <OrderTicket symbol={symbol} quote={q} owned={position?.quantity ?? 0} buyingPower={portfolio?.buying_power ?? null} />
 
         <div className="space-y-6">
