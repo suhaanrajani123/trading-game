@@ -58,3 +58,7 @@ def init_db() -> None:
                     continue
                 ddl_type = column.type.compile(dialect=engine.dialect)
                 conn.execute(text(f'ALTER TABLE "{table.name}" ADD COLUMN "{column.name}" {ddl_type}'))
+
+        # Orders saved before order statuses existed were always immediate fills.
+        conn.execute(text("UPDATE orders SET status = 'filled' WHERE status IS NULL"))
+        conn.execute(text("UPDATE orders SET filled_at = \"timestamp\" WHERE filled_at IS NULL AND status = 'filled'"))
