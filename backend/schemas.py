@@ -3,8 +3,8 @@ Pydantic schemas — the shape of what the API sends/receives.
 Kept separate from ORM models so the DB can change shape
 without breaking the API contract.
 """
-from pydantic import BaseModel
-from typing import List, Optional, Union
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from typing import List, Literal, Optional, Union
 from datetime import datetime
 
 
@@ -49,45 +49,80 @@ class MarketStatusOut(BaseModel):
 
 class PositionOut(BaseModel):
     symbol: str
+    name: Optional[str] = None
     quantity: float
     avg_cost: float
-    current_price: Optional[float] = None
-    market_value: Optional[float] = None
-    unrealized_pnl: Optional[float] = None
-
-    class Config:
-        from_attributes = True
+    current_price: float
+    market_value: float
+    cost_basis: float
+    unrealized_pnl: float
+    unrealized_pnl_percent: float
+    day_change: float
+    day_change_percent: float
+    weight: float
+    price_is_live: bool = True
 
 
 class PortfolioOut(BaseModel):
     cash: float
+    buying_power: float
+    reserved_cash: float
     positions: List[PositionOut]
     total_market_value: float
     total_equity: float
+    total_unrealized_pnl: float
+    total_realized_pnl: float
+    day_change: float
+    day_change_percent: float
+    starting_cash: float
+    total_return: float
+    total_return_percent: float
+    open_orders: int
     xp: int
     current_level: int
 
 
 class OrderIn(BaseModel):
-    symbol: str
-    side: str  # "buy" | "sell"
-    order_type: str = "market"  # "market" | "limit"
-    quantity: float
-    limit_price: Optional[float] = None
+    symbol: str = Field(..., min_length=1, max_length=12)
+    side: Literal["buy", "sell"]
+    order_type: Literal["market", "limit"] = "market"
+    quantity: float = Field(..., gt=0, le=1_000_000)
+    limit_price: Optional[float] = Field(None, gt=0, le=1_000_000)
+
+    @field_validator("quantity")
+    @classmethod
+    def round_quantity(cls, v: float) -> float:
+        v = round(v, 4)  # fractional shares down to 0.0001
+        if v <= 0:
+            raise ValueError("Quantity must be at least 0.0001 shares.")
+        return v
+
+    @model_validator(mode="after")
+    def limit_needs_price(self) -> "OrderIn":
+        if self.order_type == "limit" and self.limit_price is None:
+            raise ValueError("Limit orders need a limit price.")
+        if self.order_type == "market":
+            self.limit_price = None
+        else:
+            self.limit_price = round(self.limit_price, 2)
+        return self
 
 
 class OrderOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     symbol: str
     side: str
     order_type: str
+    status: str
     quantity: float
-    price: float
-    realized_pnl: Optional[float]
+    price: Optional[float] = None
+    limit_price: Optional[float] = None
+    realized_pnl: Optional[float] = None
+    note: Optional[str] = None
     timestamp: datetime
-
-    class Config:
-        from_attributes = True
+    filled_at: Optional[datetime] = None
 
 
 class LevelOut(BaseModel):
@@ -103,3 +138,10 @@ class LevelOut(BaseModel):
 
 class CompleteLevelIn(BaseModel):
     level_id: int
+
+
+class LevelCompleteOut(BaseModel):
+    message: str
+    xp_gained: int
+    total_xp: int
+    current_level: int
