@@ -1,34 +1,37 @@
 import type { Config } from "tailwindcss";
 
+const token = (name: string) => `rgb(var(--${name}) / <alpha-value>)`;
+
 const config: Config = {
   darkMode: ["selector", '[data-theme="dark"]'],
-  content: ["./app/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}"],
+  content: ["./app/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}", "./lib/**/*.{ts,tsx}"],
   theme: {
     extend: {
       colors: {
-        bg: "rgb(var(--bg-end) / <alpha-value>)",
-        surface: "rgb(var(--surface) / <alpha-value>)",
-        surface2: "rgb(var(--surface2) / <alpha-value>)",
-        border: "rgb(var(--border) / <alpha-value>)",
-        text: "rgb(var(--text) / <alpha-value>)",
-        muted: "rgb(var(--muted) / <alpha-value>)",
-        gain: "rgb(var(--gain) / <alpha-value>)",
-        loss: "rgb(var(--loss) / <alpha-value>)",
-        brand: "rgb(var(--brand) / <alpha-value>)",
-        brand2: "rgb(var(--brand2) / <alpha-value>)",
-        xp: "rgb(var(--xp) / <alpha-value>)",
+        paper: token("paper"),
+        surface: token("surface"),
+        surface2: token("surface-2"),
+        line: token("line"),
+        ink: token("ink"),
+        inksoft: token("ink-soft"),
+        muted: token("muted"),
+        gain: token("gain"),
+        loss: token("loss"),
+        marker: token("marker"),
+        primary: token("primary"),
+        onprimary: token("on-primary"),
       },
       fontFamily: {
-        display: ["var(--font-inter)", "sans-serif"],
-        body: ["var(--font-inter)", "sans-serif"],
-        mono: ["var(--font-plex-mono)", "monospace"],
-      },
-      boxShadow: {
-        glass: "var(--glass-shadow)",
-        glow: "var(--glow-shadow)",
+        display: ['"Bricolage Grotesque Variable"', '"IBM Plex Sans"', "system-ui", "sans-serif"],
+        sans: ['"IBM Plex Sans"', "system-ui", "-apple-system", "Segoe UI", "sans-serif"],
       },
       borderRadius: {
-        xl2: "1.25rem",
+        panel: "14px",
+        control: "10px",
+      },
+      maxWidth: {
+        page: "1320px",
+        prose: "66ch",
       },
     },
   },

@@ -1,32 +1,33 @@
 "use client";
 import { useEffect, useState } from "react";
-import { Sun, Moon, LayoutTemplate } from "lucide-react";
+import { Moon, Sun } from "lucide-react";
 
-type ThemeMode = "dark" | "light" | "default";
+type Theme = "light" | "dark";
 
-export default function ThemeToggle() {
-  const [theme, setTheme] = useState<ThemeMode>("dark");
+export default function ThemeToggle({ withLabel = false }: { withLabel?: boolean }) {
+  const [theme, setTheme] = useState<Theme>("light");
 
   useEffect(() => {
-    const current = document.documentElement.getAttribute("data-theme") as ThemeMode | null;
-    setTheme(current === "light" ? "light" : "dark");
+    setTheme(document.documentElement.getAttribute("data-theme") === "dark" ? "dark" : "light");
   }, []);
 
   function toggle() {
-    const next = theme === "dark" ? "light" : "dark";
+    const next: Theme = theme === "dark" ? "light" : "dark";
     setTheme(next);
     document.documentElement.setAttribute("data-theme", next);
-    window.localStorage.setItem("theme", next);
+    try {
+      localStorage.setItem("theme", next);
+    } catch {
+      /* storage blocked — theme still applies for this visit */
+    }
+    window.dispatchEvent(new Event("tp:theme-changed"));
   }
 
+  const label = theme === "dark" ? "Switch to light mode" : "Switch to dark mode";
   return (
-    <button
-      onClick={toggle}
-      aria-label={`Current mode: ${theme}`}
-      className="w-8 h-8 rounded-lg glass glass-hover flex items-center justify-center text-muted hover:text-text transition-colors"
-      title={`Switch theme (current: ${theme})`}
-    >
-      {theme === "dark" ? <Moon size={14} /> : <Sun size={14} />}
+    <button onClick={toggle} aria-label={label} title={label} className={withLabel ? "btn-ghost w-full justify-start px-3" : "btn-ghost w-10 px-0"}>
+      {theme === "dark" ? <Sun size={17} /> : <Moon size={17} />}
+      {withLabel && <span>{theme === "dark" ? "Light mode" : "Dark mode"}</span>}
     </button>
   );
 }

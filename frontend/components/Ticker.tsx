@@ -1,58 +1,34 @@
 "use client";
-import { useEffect, useState } from "react";
+import Link from "next/link";
 import { api } from "@/lib/api";
-import { Quote } from "@/types";
-import { ArrowUp, ArrowDown } from "lucide-react";
-
-const TICKER_SYMBOLS = ["AAPL", "MSFT", "GOOGL", "TSLA", "NVDA", "AMZN", "SPY", "META"];
+import { useResource } from "@/lib/hooks";
+import { TICKER_TAPE } from "@/lib/popularStocks";
+import { pct, tone } from "@/lib/format";
 
 export default function Ticker() {
-  const [quotes, setQuotes] = useState<Quote[]>([]);
+  const { data } = useResource(() => api.quotes(TICKER_TAPE), [], { intervalMs: 30_000 });
+  const quotes = data ? TICKER_TAPE.map((s) => data[s]).filter(Boolean) : [];
 
-  useEffect(() => {
-    let active = true;
+  if (quotes.length === 0) return <div className="h-9 border-b border-line" aria-hidden="true" />;
 
-    async function load() {
-      const results = await Promise.allSettled(TICKER_SYMBOLS.map((s) => api.getQuote(s)));
-      if (!active) return;
-      setQuotes(
-        results
-          .filter((r): r is PromiseFulfilledResult<Quote> => r.status === "fulfilled")
-          .map((r) => r.value)
-      );
-    }
-
-    load();
-    const interval = setInterval(load, 30000);
-    return () => {
-      active = false;
-      clearInterval(interval);
-    };
-  }, []);
-
-  if (quotes.length === 0) {
-    return <div className="h-[52px] border-b border-border/60 bg-transparent opacity-60" />;
-  }
-
-  // Repeat the quotes array enough times so half its width is wider than any screen
-  const items = Array(10).fill(quotes).flat();
-
+  // Two identical copies scroll by exactly half their width, so the loop is seamless.
+  const loop = [...quotes, ...quotes, ...quotes, ...quotes];
   return (
-    <div className="h-[52px] border-b border-border/60 bg-surface/50 backdrop-blur-md overflow-hidden flex items-center relative z-10">
-      <div className="flex gap-10 animate-ticker whitespace-nowrap px-5">
-        {items.map((q, i) => {
-          const positive = q.change >= 0;
-          return (
-            <span key={`${q.symbol}-${i}`} className="font-mono text-xs flex items-center gap-2.5">
-              <span className="text-muted font-medium">{q.symbol}</span>
-              <span className="text-text">${q.price.toFixed(2)}</span>
-              <span className={`flex items-center gap-0.5 ${positive ? "text-gain" : "text-loss"}`}>
-                {positive ? <ArrowUp size={11} /> : <ArrowDown size={11} />}
-                {Math.abs(q.change_percent).toFixed(2)}%
-              </span>
-            </span>
-          );
-        })}
+    <div className="h-9 border-b border-line overflow-hidden relative" aria-label="Market prices">
+      <div className="flex w-max animate-ticker">
+        {loop.map((q, i) => (
+          <Link
+            key={`${q.symbol}-${i}`}
+            href={`/trade?symbol=${q.symbol}`}
+            tabIndex={i < quotes.length ? 0 : -1}
+            aria-hidden={i >= quotes.length}
+            className="num flex items-center gap-2 h-9 px-5 text-[13px] border-r border-line/70 hover:bg-surface2/70"
+          >
+            <span className="font-semibold">{q.symbol}</span>
+            <span className="text-inksoft">{q.price.toFixed(2)}</span>
+            <span className={tone(q.change)}>{pct(q.change_percent)}</span>
+          </Link>
+        ))}
       </div>
     </div>
   );

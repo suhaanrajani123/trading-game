@@ -1,46 +1,43 @@
-import type { Metadata } from "next";
-import { Space_Grotesk, Inter, IBM_Plex_Mono } from "next/font/google";
+import type { Metadata, Viewport } from "next";
+import "@fontsource-variable/bricolage-grotesque";
+import "@fontsource/ibm-plex-sans/400.css";
+import "@fontsource/ibm-plex-sans/500.css";
+import "@fontsource/ibm-plex-sans/600.css";
 import "./globals.css";
 import AppShell from "@/components/AppShell";
 
-const spaceGrotesk = Space_Grotesk({
-  subsets: ["latin"],
-  variable: "--font-space-grotesk",
-  weight: ["500", "700"],
-});
-const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
-const plexMono = IBM_Plex_Mono({
-  subsets: ["latin"],
-  variable: "--font-plex-mono",
-  weight: ["400", "500", "600"],
-});
-
 export const metadata: Metadata = {
-  title: "Tradepath — Learn the Market with Fake Money",
-  description: "A gamified stock market simulator using real prices and zero real risk.",
+  title: { default: "Tradepath — practice investing with real prices", template: "%s · Tradepath" },
+  description:
+    "Learn how the stock market works by trading real, live prices with $100,000 of practice money. 50 lessons, a final exam, zero risk.",
 };
+
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#F4F6FA" },
+    { media: "(prefers-color-scheme: dark)", color: "#0C1321" },
+  ],
+};
+
+// Runs before first paint so the page never flashes the wrong theme.
+const themeScript = `
+(function () {
+  try {
+    var saved = localStorage.getItem('theme');
+    var theme = saved === 'light' || saved === 'dark'
+      ? saved
+      : (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    document.documentElement.setAttribute('data-theme', theme);
+  } catch (e) {}
+})();`;
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" data-theme="dark">
+    <html lang="en" suppressHydrationWarning>
       <head>
-        {/* Runs before paint so there's no flash of the wrong theme */}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              (function () {
-                try {
-                  var saved = localStorage.getItem('theme');
-                  var theme = saved === 'light' ? 'light' : 'dark';
-                  document.documentElement.setAttribute('data-theme', theme);
-                } catch (e) {}
-              })();
-            `,
-          }}
-        />
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
-      <body className={`${spaceGrotesk.variable} ${inter.variable} ${plexMono.variable} font-body bg-bg text-text min-h-screen`}>
-        <div className="mesh-bg" />
+      <body>
         <AppShell>{children}</AppShell>
       </body>
     </html>
