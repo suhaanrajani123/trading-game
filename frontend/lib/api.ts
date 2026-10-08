@@ -1,211 +1,94 @@
-import { Quote, Candle, Portfolio, OrderRequest, OrderRecord, GameLevel, Position } from "@/types";
+/**
+ * Typed client for the Tradepath API. The backend is the single source of
+ * truth for cash, positions and orders — nothing about money is computed here.
+ */
+import type {
+  Asset, Candle, ChartRange, Lesson, LessonCompleteResult, MarketStatus,
+  Order, OrderRequest, OrderStatus, Portfolio, Quote,
+} from "@/types";
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+export const API_URL = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000").replace(/\/$/, "");
 
-interface GameState {
-  cash: number;
-  xp: number;
-  current_level: number;
-  positions: Position[];
-  orders: OrderRecord[];
-  completed_levels: number[];
-}
+const DEVICE_KEY = "deviceId"; // same key as v1, so existing players keep their account
 
-function loadState(): GameState {
-  if (typeof window === "undefined") return defaultState();
-  const raw = localStorage.getItem("trading_game_state");
-  if (!raw) {
-    const s = defaultState();
-    saveState(s);
-    return s;
-  }
+/** Anonymous player ID, generated once per browser. */
+export function getDeviceId(): string {
+  if (typeof window === "undefined") return "server-render";
   try {
-    return JSON.parse(raw);
-  } catch (e) {
-    return defaultState();
+    let id = window.localStorage.getItem(DEVICE_KEY);
+    if (!id || !/^[A-Za-z0-9_-]{6,64}$/.test(id)) {
+      const rand = typeof crypto !== "undefined" && "randomUUID" in crypto
+        ? crypto.randomUUID().replace(/-/g, "")
+        : Math.random().toString(36).slice(2) + Date.now().toString(36);
+      id = `guest-${rand}`;
+      window.localStorage.setItem(DEVICE_KEY, id);
+    }
+    return id;
+  } catch {
+    // Storage blocked (private mode etc.): fall back to a per-tab ID.
+    const w = window as unknown as { __tpId?: string };
+    w.__tpId ??= `guest-${Math.random().toString(36).slice(2)}${Date.now().toString(36)}`;
+    return w.__tpId;
   }
 }
 
-function saveState(state: GameState) {
-  if (typeof window !== "undefined") {
-    localStorage.setItem("trading_game_state", JSON.stringify(state));
+export class ApiError extends Error {
+  constructor(message: string, public status: number) {
+    super(message);
   }
 }
 
-function defaultState(): GameState {
-  return {
-    cash: 100000.0,
-    xp: 0,
-    current_level: 1,
-    positions: [],
-    orders: [],
-    completed_levels: [],
-  };
-}
-
-function getDeviceId() {
-  if (typeof window === "undefined") return "server-side";
-  let deviceId = localStorage.getItem("deviceId");
-  if (!deviceId) {
-    deviceId = "guest-" + Math.random().toString(36).substring(2, 15);
-    localStorage.setItem("deviceId", deviceId);
+async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  let res: Response;
+  try {
+    res = await fetch(`${API_URL}${path}`, {
+      ...init,
+      headers: { "Content-Type": "application/json", "X-User-ID": getDeviceId(), ...(init?.headers || {}) },
+      cache: "no-store",
+    });
+  } catch {
+    throw new ApiError("Can't reach the Tradepath server. Check that the backend is running.", 0);
   }
-  return deviceId;
-}
-
-async function request<T>(path: string, options?: RequestInit): Promise<T> {
-  const userId = getDeviceId();
-  const res = await fetch(`${BASE_URL}${path}`, {
-    ...options,
-    headers: { 
-      "Content-Type": "application/json", 
-      "X-User-ID": userId,
-      ...(options?.headers || {}) 
-    },
-    cache: "no-store",
-  });
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
-    throw new Error(body.detail || `Request failed: ${res.status}`);
+    throw new ApiError(readDetail(body.detail) || `Request failed (${res.status}).`, res.status);
   }
-  return res.json();
+  return res.json() as Promise<T>;
+}
+
+/** FastAPI returns either a string or a list of validation errors. */
+function readDetail(detail: unknown): string | null {
+  if (typeof detail === "string") return detail;
+  if (Array.isArray(detail) && detail[0]?.msg) return String(detail[0].msg).replace(/^Value error, /, "");
+  return null;
+}
+
+const enc = encodeURIComponent;
+
+/** Notify any mounted view that cash/positions changed. */
+export function emitPortfolioChanged() {
+  if (typeof window !== "undefined") window.dispatchEvent(new Event("tp:portfolio-changed"));
 }
 
 export const api = {
-  getQuote: (symbol: string) => request<Quote>(`/market/quote/${symbol}`),
-  
-  getHistory: (symbol: string, period = "1mo", interval = "1d") =>
-    request<Candle[]>(`/market/history/${symbol}?period=${period}&interval=${interval}`),
-    
-  getPortfolio: async (): Promise<Portfolio> => {
-    const state = loadState();
-    const positions_out: Position[] = [];
-    let total_market_value = 0.0;
+  // Market data
+  quote: (symbol: string) => request<Quote>(`/market/quote/${enc(symbol)}`),
+  quotes: (symbols: string[]) =>
+    request<Record<string, Quote>>(`/market/quotes?symbols=${enc(symbols.join(","))}`),
+  history: (symbol: string, range: ChartRange) =>
+    request<Candle[]>(`/market/history/${enc(symbol)}?range=${range}`),
+  search: (q: string) => request<Asset[]>(`/market/search?q=${enc(q)}`),
+  marketStatus: () => request<MarketStatus>("/market/status"),
 
-    for (const pos of state.positions) {
-      if (pos.quantity <= 0) continue;
-      let current_price = pos.avg_cost;
-      try {
-        const q = await api.getQuote(pos.symbol);
-        current_price = q.price;
-      } catch (e) {
-        // use avg_cost if quote fails
-      }
-      
-      const market_value = current_price * pos.quantity;
-      const unrealized_pnl = (current_price - pos.avg_cost) * pos.quantity;
-      total_market_value += market_value;
-      
-      positions_out.push({
-        symbol: pos.symbol,
-        quantity: pos.quantity,
-        avg_cost: pos.avg_cost,
-        current_price,
-        market_value: parseFloat(market_value.toFixed(2)),
-        unrealized_pnl: parseFloat(unrealized_pnl.toFixed(2)),
-      });
-    }
+  // Account
+  portfolio: () => request<Portfolio>("/portfolio"),
+  resetPortfolio: () => request<Portfolio>("/portfolio/reset", { method: "POST" }),
+  orders: (status?: OrderStatus) => request<Order[]>(`/orders${status ? `?status=${status}` : ""}`),
+  placeOrder: (order: OrderRequest) => request<Order>("/orders", { method: "POST", body: JSON.stringify(order) }),
+  cancelOrder: (id: number) => request<Order>(`/orders/${id}`, { method: "DELETE" }),
 
-    return {
-      cash: parseFloat(state.cash.toFixed(2)),
-      positions: positions_out,
-      total_market_value: parseFloat(total_market_value.toFixed(2)),
-      total_equity: parseFloat((state.cash + total_market_value).toFixed(2)),
-      xp: state.xp,
-      current_level: state.current_level,
-    };
-  },
-
-  placeOrder: async (order: OrderRequest): Promise<OrderRecord> => {
-    const state = loadState();
-    const symbol = order.symbol.toUpperCase();
-    if (order.quantity <= 0) throw new Error("Quantity must be greater than zero.");
-    
-    const quote = await api.getQuote(symbol);
-    let exec_price = quote.price;
-
-    if (order.order_type === "limit") {
-      if (order.limit_price === undefined) throw new Error("Limit orders require a limit_price.");
-      if (order.side === "buy" && exec_price > order.limit_price) throw new Error("Market price is above your limit — order not filled yet.");
-      if (order.side === "sell" && exec_price < order.limit_price) throw new Error("Market price is below your limit — order not filled yet.");
-      exec_price = order.limit_price;
-    }
-
-    const posIndex = state.positions.findIndex(p => p.symbol === symbol);
-    let position = posIndex >= 0 ? state.positions[posIndex] : null;
-    let realized_pnl: number | null = null;
-
-    if (order.side === "buy") {
-      const cost = exec_price * order.quantity;
-      if (cost > state.cash) throw new Error("Not enough cash for this trade.");
-      state.cash -= cost;
-
-      if (position) {
-        const total_cost = position.avg_cost * position.quantity + cost;
-        position.quantity += order.quantity;
-        position.avg_cost = total_cost / position.quantity;
-      } else {
-        state.positions.push({ symbol, quantity: order.quantity, avg_cost: exec_price });
-      }
-    } else if (order.side === "sell") {
-      if (!position || position.quantity < order.quantity) throw new Error("You don't own enough shares to sell that much.");
-      const proceeds = exec_price * order.quantity;
-      realized_pnl = (exec_price - position.avg_cost) * order.quantity;
-      state.cash += proceeds;
-      position.quantity -= order.quantity;
-      if (position.quantity === 0) {
-        state.positions.splice(posIndex, 1);
-      }
-    } else {
-      throw new Error("side must be 'buy' or 'sell'.");
-    }
-
-    const new_order: OrderRecord = {
-      id: Date.now(),
-      symbol,
-      side: order.side,
-      order_type: order.order_type,
-      quantity: order.quantity,
-      price: exec_price,
-      realized_pnl,
-      timestamp: new Date().toISOString(),
-    };
-    state.orders.push(new_order);
-    saveState(state);
-    return new_order;
-  },
-
-  getOrderHistory: async (): Promise<OrderRecord[]> => {
-    const state = loadState();
-    return [...state.orders].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-  },
-
-  getLevels: async (): Promise<GameLevel[]> => {
-    const levels = await request<GameLevel[]>("/game/levels");
-    const state = loadState();
-    return levels.map(l => ({
-      ...l,
-      completed: state.completed_levels.includes(l.id)
-    }));
-  },
-
-  completeLevel: async (level_id: number) => {
-    const levels = await request<GameLevel[]>("/game/levels");
-    const level = levels.find(l => l.id === level_id);
-    if (!level) throw new Error("Level not found.");
-    
-    const state = loadState();
-    if (state.completed_levels.includes(level_id)) {
-      return { message: "Level already completed.", xp_gained: 0, total_xp: state.xp };
-    }
-    
-    state.completed_levels.push(level_id);
-    state.xp += level.xp_reward;
-    if (level_id >= state.current_level) {
-      state.current_level = level_id + 1;
-    }
-    
-    saveState(state);
-    return { message: `Level ${level_id} complete!`, xp_gained: level.xp_reward, total_xp: state.xp };
-  },
+  // Learning
+  lessons: () => request<Lesson[]>("/game/levels"),
+  completeLesson: (level_id: number) =>
+    request<LessonCompleteResult>("/game/complete", { method: "POST", body: JSON.stringify({ level_id }) }),
 };

@@ -1,7 +1,6 @@
 /**
- * A curated list of well-known tickers for beginners who don't know
- * symbols off the top of their head. Not exhaustive, not investment
- * advice — just recognizable names across a spread of sectors.
+ * Recognizable tickers for beginners who don't know symbols yet. Names are
+ * shown instantly without waiting for the backend's asset list.
  */
 export interface PopularStock {
   symbol: string;
@@ -12,27 +11,24 @@ export interface PopularStock {
 export const POPULAR_STOCKS: PopularStock[] = [
   { symbol: "AAPL", name: "Apple", sector: "Technology" },
   { symbol: "MSFT", name: "Microsoft", sector: "Technology" },
+  { symbol: "NVDA", name: "Nvidia", sector: "Semiconductors" },
   { symbol: "GOOGL", name: "Alphabet", sector: "Technology" },
   { symbol: "AMZN", name: "Amazon", sector: "Retail" },
-  { symbol: "NVDA", name: "Nvidia", sector: "Semiconductors" },
   { symbol: "META", name: "Meta Platforms", sector: "Technology" },
   { symbol: "TSLA", name: "Tesla", sector: "Automotive" },
   { symbol: "NFLX", name: "Netflix", sector: "Media" },
-  { symbol: "AMD", name: "Advanced Micro Devices", sector: "Semiconductors" },
-  { symbol: "INTC", name: "Intel", sector: "Semiconductors" },
-  { symbol: "CRM", name: "Salesforce", sector: "Software" },
-  { symbol: "ORCL", name: "Oracle", sector: "Software" },
-  { symbol: "DIS", name: "Disney", sector: "Media" },
-  { symbol: "NKE", name: "Nike", sector: "Apparel" },
-  { symbol: "SBUX", name: "Starbucks", sector: "Restaurants" },
-  { symbol: "MCD", name: "McDonald's", sector: "Restaurants" },
-  { symbol: "KO", name: "Coca-Cola", sector: "Beverages" },
-  { symbol: "PEP", name: "PepsiCo", sector: "Beverages" },
-  { symbol: "WMT", name: "Walmart", sector: "Retail" },
+  { symbol: "AMD", name: "AMD", sector: "Semiconductors" },
   { symbol: "JPM", name: "JPMorgan Chase", sector: "Banking" },
   { symbol: "V", name: "Visa", sector: "Payments" },
-  { symbol: "MA", name: "Mastercard", sector: "Payments" },
-  { symbol: "PYPL", name: "PayPal", sector: "Payments" },
-  { symbol: "BA", name: "Boeing", sector: "Aerospace" },
-  { symbol: "XOM", name: "ExxonMobil", sector: "Energy" },
+  { symbol: "DIS", name: "Disney", sector: "Media" },
+  { symbol: "KO", name: "Coca-Cola", sector: "Beverages" },
+  { symbol: "NKE", name: "Nike", sector: "Apparel" },
+  { symbol: "WMT", name: "Walmart", sector: "Retail" },
+  { symbol: "SPY", name: "S&P 500 ETF", sector: "Index fund" },
+  { symbol: "QQQ", name: "Nasdaq-100 ETF", sector: "Index fund" },
 ];
+
+export const TICKER_TAPE = ["SPY", "QQQ", "AAPL", "MSFT", "NVDA", "GOOGL", "AMZN", "META", "TSLA", "JPM"];
+
+const NAMES = Object.fromEntries(POPULAR_STOCKS.map((s) => [s.symbol, s.name]));
+export const knownName = (symbol: string): string | undefined => NAMES[symbol];
