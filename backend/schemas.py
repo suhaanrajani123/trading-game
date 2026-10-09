@@ -4,7 +4,7 @@ Kept separate from ORM models so the DB can change shape
 without breaking the API contract.
 """
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
-from typing import List, Literal, Optional, Union
+from typing import Dict, List, Literal, Optional, Union
 from datetime import datetime
 
 
@@ -145,3 +145,22 @@ class LevelCompleteOut(BaseModel):
     xp_gained: int
     total_xp: int
     current_level: int
+
+
+class HistoryPointOut(BaseModel):
+    time: Union[str, int]
+    total: float
+    cash: float
+    holdings: Dict[str, float]
+
+
+class PortfolioHistoryOut(BaseModel):
+    range: str
+    resolution: str
+    intraday: bool
+    started_at: str
+    starting_cash: float
+    symbols: List[str]
+    points: List[HistoryPointOut]
+    change: float
+    change_percent: float

@@ -4,6 +4,7 @@ import { ArrowUpRight, BookOpen } from "lucide-react";
 import { useAccount } from "@/components/AccountProvider";
 import AllocationStrip from "@/components/AllocationStrip";
 import HoldingsTable from "@/components/HoldingsTable";
+import PortfolioChart from "@/components/PortfolioChart";
 import ServerError from "@/components/ServerError";
 import Watchlist from "@/components/Watchlist";
 import { api } from "@/lib/api";
@@ -104,6 +105,8 @@ export default function DashboardPage() {
           )}
         </aside>
       </section>
+
+      <PortfolioChart />
 
       <section className="grid lg:grid-cols-[1fr_340px] gap-4 md:gap-6 items-start [&>*]:min-w-0">
         <div className="panel">

@@ -120,3 +120,25 @@ export interface LessonCompleteResult {
   total_xp: number;
   current_level: number;
 }
+
+export type HistoryRange = "1D" | "1W" | "1M" | "3M" | "1Y" | "ALL";
+
+export interface HistoryPoint {
+  /** "YYYY-MM-DD" for daily resolution, unix seconds for intraday */
+  time: string | number;
+  total: number;
+  cash: number;
+  holdings: Record<string, number>;
+}
+
+export interface PortfolioHistory {
+  range: HistoryRange;
+  resolution: string;
+  intraday: boolean;
+  started_at: string;
+  starting_cash: number;
+  symbols: string[];
+  points: HistoryPoint[];
+  change: number;
+  change_percent: number;
+}

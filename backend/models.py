@@ -24,6 +24,8 @@ class User(Base):
     xp = Column(Integer, default=0)
     current_level = Column(Integer, default=1)
     created_at = Column(DateTime(timezone=True), default=utcnow)
+    # When the current portfolio began (account creation, or the last reset).
+    started_at = Column(DateTime(timezone=True), default=utcnow)
 
     positions = relationship("Position", back_populates="user", cascade="all, delete-orphan")
     orders = relationship("Order", back_populates="user", cascade="all, delete-orphan")
