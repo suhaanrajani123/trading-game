@@ -31,9 +31,10 @@ export default function LearnView() {
 
   return (
     <div className="animate-rise">
+      <div className={selected ? "hidden lg:block" : ""}>
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-[30px] font-semibold">Lessons</h1>
+          <h1 className="text-[26px] md:text-[30px] font-semibold">Lessons</h1>
           <p className="mt-1 text-inksoft max-w-prose">
             Fifty short lessons, from what a share is to options and the Fed. Read them in order or jump to what you&apos;re curious about.
           </p>
@@ -50,8 +51,9 @@ export default function LearnView() {
         </div>
         <p className="num text-sm text-inksoft whitespace-nowrap">{done} of {total} done</p>
       </div>
+      </div>
 
-      <div className="mt-6 grid lg:grid-cols-[360px_1fr] gap-6 items-start [&>*]:min-w-0">
+      <div className={`${selected ? "mt-0 lg:mt-6" : "mt-5 md:mt-6"} grid lg:grid-cols-[360px_1fr] gap-6 items-start [&>*]:min-w-0`}>
         <nav aria-label="Lessons" className={`panel lg:sticky lg:top-[124px] lg:max-h-[calc(100vh-148px)] overflow-auto ${selected ? "hidden lg:block" : ""}`}>
           {!lessons ? (
             <div className="p-4 space-y-2">{Array.from({ length: 8 }).map((_, i) => <div key={i} className="skeleton h-11" />)}</div>
@@ -124,7 +126,7 @@ function LessonReader({
   const top = useRef<HTMLElement>(null);
 
   useEffect(() => {
-    if (window.innerWidth < 1024) top.current?.scrollIntoView({ block: "start" });
+    if (window.innerWidth < 1024) window.scrollTo({ top: 0 });
   }, []);
 
   async function complete() {
@@ -140,29 +142,29 @@ function LessonReader({
   }
 
   return (
-    <article ref={top} className="panel p-6 md:p-9 scroll-mt-32" aria-labelledby="lesson-title">
+    <article ref={top} className="panel p-5 md:p-9 scroll-mt-32" aria-labelledby="lesson-title">
       <button onClick={onBack} className="lg:hidden btn-ghost -ml-3 mb-3"><ArrowLeft size={16} /> All lessons</button>
       <p className="text-sm text-muted num">Lesson {lesson.id}</p>
-      <h2 id="lesson-title" className="mt-1 text-[30px] md:text-[34px] leading-tight font-semibold">{lesson.title}</h2>
+      <h2 id="lesson-title" className="mt-1 text-[26px] md:text-[34px] leading-tight font-semibold">{lesson.title}</h2>
       <p className="mt-2 text-[17px] text-inksoft max-w-prose">{lesson.description}</p>
 
-      <div className="mt-7 max-w-prose space-y-4 text-[16.5px] leading-[1.7]">
+      <div className="mt-6 md:mt-7 max-w-prose space-y-4 text-[16px] md:text-[16.5px] leading-[1.7]">
         <LessonBody text={lesson.lesson} />
       </div>
 
-      <div className="mt-9 pt-6 border-t border-line flex flex-wrap items-center gap-3">
+      <div className="mt-8 md:mt-9 pt-6 border-t border-line flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-3">
         {lesson.completed || gained != null ? (
           <p className="flex items-center gap-2 text-[15px]">
             <span className="grid place-items-center w-7 h-7 rounded-full bg-marker text-[#14213D]"><Check size={15} strokeWidth={3} /></span>
             {gained ? `Lesson complete. You earned ${gained} XP.` : "You've completed this lesson."}
           </p>
         ) : (
-          <button onClick={complete} disabled={saving} className="btn-primary h-11">
+          <button onClick={complete} disabled={saving} className="btn-primary h-11 w-full sm:w-auto">
             {saving ? "Saving…" : `Complete lesson, +${lesson.xp_reward} XP`}
           </button>
         )}
         {next && (
-          <button onClick={() => onNext(next.id)} className="btn-secondary h-11 ml-auto">
+          <button onClick={() => onNext(next.id)} className="btn-secondary h-11 w-full sm:w-auto sm:ml-auto truncate">
             Next: {next.title}
           </button>
         )}

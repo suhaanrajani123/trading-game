@@ -21,13 +21,13 @@ export default function AllocationStrip({ portfolio }: { portfolio: Portfolio })
           <div key={s.key} className={`${s.cls} h-full first:rounded-l-full last:rounded-r-full`} style={{ width: `${(s.value / equity) * 100}%` }} />
         ))}
       </div>
-      <ul className="mt-3 flex flex-wrap gap-x-5 gap-y-1.5 text-[13px] text-inksoft num">
+      <ul className="mt-3 grid grid-cols-2 sm:flex sm:flex-wrap gap-x-5 gap-y-1.5 text-[13px] text-inksoft num">
         {segments.map((s) => (
-          <li key={s.key} className="flex items-center gap-1.5">
+          <li key={s.key} className="flex items-center gap-1.5 min-w-0 flex-wrap">
             <span className={`w-2.5 h-2.5 rounded-sm ${s.cls}`} aria-hidden="true" />
             <span className="text-ink font-medium">{s.label}</span>
             {money(s.value)}
-            <span className="text-muted">({((s.value / equity) * 100).toFixed(1)}%)</span>
+            <span className="text-muted hidden sm:inline">({((s.value / equity) * 100).toFixed(1)}%)</span>
           </li>
         ))}
       </ul>

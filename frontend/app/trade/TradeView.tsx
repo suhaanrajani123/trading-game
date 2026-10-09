@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, Search, X } from "lucide-react";
 import { useAccount } from "@/components/AccountProvider";
@@ -7,7 +8,7 @@ import OrderTicket from "@/components/OrderTicket";
 import StockChart from "@/components/StockChart";
 import SymbolMark from "@/components/SymbolMark";
 import { api, emitPortfolioChanged } from "@/lib/api";
-import { useDebounced, useResource } from "@/lib/hooks";
+import { useDebounced, useMediaQuery, useResource } from "@/lib/hooks";
 import { POPULAR_STOCKS, knownName } from "@/lib/popularStocks";
 import { compactNum, money, pct, shares, signedMoney, tone } from "@/lib/format";
 import type { ChartRange, Quote } from "@/types";
@@ -29,7 +30,7 @@ export default function TradeView() {
   const select = (s: string) => router.replace(`/trade?symbol=${encodeURIComponent(s)}`, { scroll: false });
 
   return (
-    <div className="grid lg:grid-cols-[340px_1fr] gap-6 items-start animate-rise [&>*]:min-w-0">
+    <div className="grid lg:grid-cols-[340px_1fr] gap-4 md:gap-6 items-start animate-rise [&>*]:min-w-0">
       <div className={picked ? "hidden lg:block" : ""}>
         <StockList active={picked ? symbol : null} desktopActive={symbol} onSelect={select} />
       </div>
@@ -189,6 +190,8 @@ function StockList({
 function SymbolView({ symbol }: { symbol: string }) {
   const [range, setRange] = useState<ChartRange>("1M");
   const { portfolio } = useAccount();
+  const isPhone = useMediaQuery("(max-width: 767px)");
+  const chartHeight = isPhone ? 260 : 380;
   const quote = useResource(() => api.quote(symbol), [symbol], { intervalMs: 20_000 });
   const history = useResource(() => api.history(symbol, range), [symbol, range]);
   const openOrders = useResource(() => api.orders("open"), [symbol], { events: ["tp:portfolio-changed"] });
@@ -218,8 +221,8 @@ function SymbolView({ symbol }: { symbol: string }) {
   }
 
   return (
-    <div className="space-y-6">
-      <section className="panel p-5 md:p-6">
+    <div className="space-y-4 md:space-y-6 pb-16 md:pb-0">
+      <section className="panel p-4 md:p-6">
         <div className="flex flex-wrap items-start gap-4 justify-between">
           <div className="flex items-center gap-3 min-w-0">
             <SymbolMark symbol={symbol} size={44} />
@@ -231,7 +234,7 @@ function SymbolView({ symbol }: { symbol: string }) {
           <div className="w-full sm:w-auto sm:text-right num">
             {q ? (
               <>
-                <p className="font-display text-[34px] leading-none font-semibold">{money(q.price)}</p>
+                <p className="font-display text-[30px] md:text-[34px] leading-none font-semibold">{money(q.price)}</p>
                 <p className={`mt-1.5 text-[15px] ${tone(range === "1D" || rangeChange == null ? q.change : rangeChange)}`}>
                   {range === "1D" || rangeChange == null
                     ? `${signedMoney(q.change)} (${pct(q.change_percent)}) today`
@@ -248,7 +251,7 @@ function SymbolView({ symbol }: { symbol: string }) {
         </div>
 
         <div className="mt-5 flex items-center justify-between gap-3">
-          <div className="seg max-w-full shrink-0" role="group" aria-label="Chart range">
+          <div className="seg w-full sm:w-auto shrink-0 [&>button]:flex-1 sm:[&>button]:flex-none" role="group" aria-label="Chart range">
             {RANGES.map((r) => (
               <button key={r} aria-pressed={r === range} onClick={() => setRange(r)}>
                 {r}
@@ -264,16 +267,16 @@ function SymbolView({ symbol }: { symbol: string }) {
 
         <div className="mt-4">
           {history.loading ? (
-            <div className="skeleton h-[380px]" />
+            <div className="skeleton" style={{ height: chartHeight }} />
           ) : history.error ? (
-            <div className="h-[380px] grid place-items-center text-sm text-inksoft text-center px-6">{history.error}</div>
+            <div className="grid place-items-center text-sm text-inksoft text-center px-6" style={{ height: chartHeight }}>{history.error}</div>
           ) : (
-            <StockChart candles={candles} intraday={range === "1D" || range === "1W"} />
+            <StockChart candles={candles} intraday={range === "1D" || range === "1W"} height={chartHeight} />
           )}
         </div>
 
         {q && (
-          <dl className="mt-5 grid grid-cols-2 sm:grid-cols-5 gap-4 border-t border-line pt-5 num text-sm">
+          <dl className="mt-5 grid grid-cols-3 sm:grid-cols-5 gap-4 border-t border-line pt-5 num text-sm">
             <Fact label="Open" value={money(q.open)} />
             <Fact label="Day high" value={money(q.high)} />
             <Fact label="Day low" value={money(q.low)} />
@@ -283,7 +286,7 @@ function SymbolView({ symbol }: { symbol: string }) {
         )}
       </section>
 
-      <div className="grid 2xl:grid-cols-2 gap-6 items-start">
+      <div className="grid 2xl:grid-cols-2 gap-4 md:gap-6 items-start">
         <OrderTicket symbol={symbol} quote={q} owned={position?.quantity ?? 0} buyingPower={portfolio?.buying_power ?? null} />
 
         <div className="space-y-6">
@@ -333,7 +336,35 @@ function SymbolView({ symbol }: { symbol: string }) {
           )}
         </div>
       </div>
+
+      <PhoneTradeBar symbol={symbol} />
     </div>
+  );
+}
+
+/** Phone: Buy/Sell always one thumb away, pinned above the tab bar. */
+function PhoneTradeBar({ symbol }: { symbol: string }) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  if (!mounted) return null;
+  return createPortal(
+      <div className="md:hidden fixed inset-x-0 bottom-[calc(64px+env(safe-area-inset-bottom))] z-30 px-3 pb-2 pt-2 bg-gradient-to-t from-paper via-paper/95 to-transparent">
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            onClick={() => window.dispatchEvent(new CustomEvent("tp:ticket-side", { detail: "buy" }))}
+            className="h-11 rounded-control bg-gain text-white font-semibold"
+          >
+            Buy {symbol}
+          </button>
+          <button
+            onClick={() => window.dispatchEvent(new CustomEvent("tp:ticket-side", { detail: "sell" }))}
+            className="h-11 rounded-control bg-loss text-white font-semibold"
+          >
+            Sell {symbol}
+          </button>
+        </div>
+      </div>,
+    document.body,
   );
 }
 

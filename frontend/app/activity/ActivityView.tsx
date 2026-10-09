@@ -26,15 +26,15 @@ export default function ActivityView() {
   });
 
   return (
-    <div className="space-y-6 animate-rise">
+    <div className="space-y-4 md:space-y-6 animate-rise">
       <div>
-        <h1 className="text-[30px] font-semibold">Activity</h1>
+        <h1 className="text-[26px] md:text-[30px] font-semibold">Activity</h1>
         <p className="mt-1 text-inksoft">Every order you&apos;ve placed. Open limit orders can be cancelled until they fill.</p>
       </div>
 
       <section className="panel">
-        <div className="panel-head">
-          <div className="seg" role="group" aria-label="Filter orders">
+        <div className="panel-head px-3 md:px-5">
+          <div className="seg w-full sm:w-auto [&>button]:flex-1 sm:[&>button]:flex-none" role="group" aria-label="Filter orders">
             {FILTERS.map((f) => (
               <button
                 key={f.key}
@@ -67,15 +67,50 @@ export default function ActivityView() {
 }
 
 const STATUS_STYLE: Record<OrderStatus, string> = {
-  open: "bg-marker/40 text-ink",
+  open: "bg-marker text-[#14213D] font-medium",
   filled: "bg-surface2 text-inksoft",
   cancelled: "text-muted line-through decoration-muted/60",
 };
 
 function OrdersTable({ orders }: { orders: Order[] }) {
   const [busy, setBusy] = useState<number | null>(null);
+  const cancel = async (id: number) => {
+    setBusy(id);
+    await api.cancelOrder(id).catch(() => null);
+    setBusy(null);
+    emitPortfolioChanged();
+  };
   return (
-    <div className="overflow-x-auto">
+    <>
+    <ul className="md:hidden border-t border-line divide-y divide-line/70 num">
+      {orders.map((o) => (
+        <li key={o.id} className="flex items-start gap-3 px-4 py-3">
+          <SymbolMark symbol={o.symbol} size={36} />
+          <div className="min-w-0 flex-1">
+            <p className="font-semibold">
+              <span className={o.side === "buy" ? "text-gain" : "text-loss"}>{o.side === "buy" ? "Buy" : "Sell"}</span>{" "}
+              {shares(o.quantity)} {o.symbol}
+            </p>
+            <p className="text-[13px] text-inksoft">
+              {o.order_type === "limit" ? `Limit ${money(o.limit_price)}` : "Market"}
+              {o.price != null ? `, filled at ${money(o.price)}` : ""}
+            </p>
+            <p className="text-[12.5px] text-muted">{dateTime(o.timestamp)}</p>
+            {o.note && <p className="text-[12.5px] text-muted">{o.note}</p>}
+          </div>
+          <div className="text-right shrink-0 space-y-1">
+            <span className={`inline-block px-2 py-0.5 rounded-full text-[12px] capitalize ${STATUS_STYLE[o.status]}`}>{o.status}</span>
+            {o.realized_pnl != null && <p className={`text-[13px] ${tone(o.realized_pnl)}`}>{signedMoney(o.realized_pnl)}</p>}
+            {o.status === "open" && (
+              <button disabled={busy === o.id} onClick={() => cancel(o.id)} className="block ml-auto text-[13px] text-inksoft underline underline-offset-2 disabled:opacity-50">
+                Cancel
+              </button>
+            )}
+          </div>
+        </li>
+      ))}
+    </ul>
+    <div className="hidden md:block overflow-x-auto">
       <table className="w-full min-w-[720px] text-sm num">
         <thead>
           <tr className="border-y border-line">
@@ -116,12 +151,7 @@ function OrdersTable({ orders }: { orders: Order[] }) {
                   <button
                     disabled={busy === o.id}
                     className="ml-3 text-inksoft hover:text-ink underline underline-offset-2 disabled:opacity-50"
-                    onClick={async () => {
-                      setBusy(o.id);
-                      await api.cancelOrder(o.id).catch(() => null);
-                      setBusy(null);
-                      emitPortfolioChanged();
-                    }}
+                    onClick={() => cancel(o.id)}
                   >
                     Cancel
                   </button>
@@ -132,6 +162,7 @@ function OrdersTable({ orders }: { orders: Order[] }) {
         </tbody>
       </table>
     </div>
+    </>
   );
 }
 

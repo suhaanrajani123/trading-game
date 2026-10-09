@@ -25,12 +25,12 @@ export default function ExamPage() {
   if (stage === "intro") {
     return (
       <div className="max-w-2xl animate-rise">
-        <h1 className="text-[30px] font-semibold">Final exam</h1>
+        <h1 className="text-[26px] md:text-[30px] font-semibold">Final exam</h1>
         <p className="mt-2 text-inksoft text-[16.5px] max-w-prose">
           {total} multiple-choice questions covering everything in the lessons. You&apos;ll see whether each answer is right as you go.
           Score {PASS}% or more to pass, and retake it as often as you like.
         </p>
-        <button onClick={start} className="btn-primary h-11 mt-6">Start the exam</button>
+        <button onClick={start} className="btn-primary h-11 mt-6 w-full sm:w-auto">Start the exam</button>
       </div>
     );
   }
@@ -84,8 +84,8 @@ export default function ExamPage() {
         <p className="num text-sm text-inksoft whitespace-nowrap">Question {index + 1} of {total}</p>
       </div>
 
-      <section className="panel p-6 md:p-8 mt-5">
-        <h1 className="text-[24px] leading-snug font-semibold">{q.question}</h1>
+      <section className="panel p-5 md:p-8 mt-5">
+        <h1 className="text-[20px] md:text-[24px] leading-snug font-semibold">{q.question}</h1>
         <ul className="mt-6 space-y-2.5">
           {q.options.map((opt, i) => {
             const isRight = i === q.correctIndex;
