@@ -17,7 +17,7 @@ export default function MobileNav() {
                 aria-current={active ? "page" : undefined}
                 className={`flex flex-col items-center gap-1 pt-2.5 pb-2 text-[11px] ${active ? "text-ink font-medium" : "text-muted"}`}
               >
-                <span className={`grid place-items-center w-12 h-7 rounded-full ${active ? "bg-marker/45" : ""}`}>
+                <span className={`grid place-items-center w-12 h-7 rounded-full transition-colors ${active ? "bg-marker text-[#14213D]" : ""}`}>
                   <Icon size={19} strokeWidth={active ? 2.2 : 1.8} />
                 </span>
                 {short}

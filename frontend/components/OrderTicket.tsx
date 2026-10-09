@@ -35,6 +35,17 @@ export default function OrderTicket({
     setQty("1");
   }, [symbol]);
 
+  // The phone action bar asks the ticket to switch side and scroll into view.
+  useEffect(() => {
+    const onSide = (e: Event) => {
+      const next = (e as CustomEvent<OrderSide>).detail;
+      if (next === "buy" || next === "sell") setSide(next);
+      document.getElementById("order-ticket")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    };
+    window.addEventListener("tp:ticket-side", onSide);
+    return () => window.removeEventListener("tp:ticket-side", onSide);
+  }, []);
+
   useEffect(() => {
     if (type === "limit" && !limit && quote) setLimit(quote.price.toFixed(2));
   }, [type, quote, limit]);
@@ -78,7 +89,7 @@ export default function OrderTicket({
   const verb = side === "buy" ? "Buy" : "Sell";
 
   return (
-    <form onSubmit={submit} className="panel p-5" aria-label={`Trade ${symbol}`}>
+    <form id="order-ticket" onSubmit={submit} className="panel p-4 md:p-5 scroll-mt-32" aria-label={`Trade ${symbol}`}>
       <div className="grid grid-cols-2 gap-1 p-1 rounded-control bg-surface2" role="group" aria-label="Buy or sell">
         {(["buy", "sell"] as const).map((s) => (
           <button
@@ -170,7 +181,7 @@ export default function OrderTicket({
         </p>
       )}
 
-      <button type="submit" disabled={!canSubmit} className="btn-primary w-full mt-5 h-11 text-[15px]">
+      <button type="submit" disabled={!canSubmit} className={`btn w-full mt-5 h-11 text-[15px] font-semibold text-white ${side === "buy" ? "bg-gain hover:bg-gain/90" : "bg-loss hover:bg-loss/90"}`}>
         {busy ? "Placing order…" : type === "limit" ? `Place limit ${side}` : `${verb} ${q > 0 ? shares(q) : ""} ${symbol}`}
       </button>
 

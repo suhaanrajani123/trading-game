@@ -100,7 +100,7 @@ export default function SymbolSearch({ autoFocus = false, onPick }: { autoFocus?
         aria-expanded={showList}
         aria-controls={listId}
         aria-autocomplete="list"
-        className="field pl-10 pr-10"
+        className="field h-10 md:h-11 pl-10 pr-10"
         autoComplete="off"
         spellCheck={false}
       />

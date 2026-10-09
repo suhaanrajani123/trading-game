@@ -20,16 +20,16 @@ export default function DashboardPage() {
   if (error && !p) return <ServerError message={error} />;
 
   return (
-    <div className="space-y-6 animate-rise">
-      <section className="grid lg:grid-cols-[1fr_340px] gap-6 [&>*]:min-w-0">
-        <div className="panel p-6 md:p-7">
+    <div className="space-y-4 md:space-y-6 animate-rise">
+      <section className="grid lg:grid-cols-[1fr_340px] gap-4 md:gap-6 [&>*]:min-w-0">
+        <div className="panel p-5 md:p-7">
           <h1 className="text-[15px] font-sans font-medium text-inksoft">Account value</h1>
           {p ? (
             <>
-              <p className="num font-display text-[44px] md:text-[56px] leading-none font-semibold tracking-tight mt-2">
+              <p className="num font-display text-[40px] md:text-[56px] leading-none font-semibold tracking-tight mt-2">
                 {money(p.total_equity)}
               </p>
-              <div className="mt-3 flex flex-wrap gap-x-6 gap-y-1 text-[15px] num">
+              <div className="mt-3 flex flex-col sm:flex-row sm:flex-wrap gap-x-6 gap-y-1 text-[15px] num">
                 <p>
                   <span className={tone(p.day_change)}>
                     {signedMoney(p.day_change)} ({pct(p.day_change_percent)})
@@ -40,13 +40,13 @@ export default function DashboardPage() {
                   <span className={tone(p.total_return)}>
                     {signedMoney(p.total_return)} ({pct(p.total_return_percent)})
                   </span>{" "}
-                  <span className="text-inksoft">since you started with {moneyWhole(p.starting_cash)}</span>
+                  <span className="text-inksoft">all time<span className="hidden sm:inline"> (started with {moneyWhole(p.starting_cash)})</span></span>
                 </p>
               </div>
-              <div className="mt-7">
+              <div className="mt-6 md:mt-7">
                 <AllocationStrip portfolio={p} />
               </div>
-              <dl className="mt-7 grid grid-cols-2 md:grid-cols-4 gap-y-4 border-t border-line pt-5 num">
+              <dl className="mt-6 md:mt-7 grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-4 border-t border-line pt-5 num">
                 <Stat label="Cash" value={money(p.cash)} />
                 <Stat label="Buying power" value={money(p.buying_power)} hint={p.reserved_cash > 0 ? `${money(p.reserved_cash)} held for open orders` : undefined} />
                 <Stat label="Invested" value={money(p.total_market_value)} />
@@ -62,7 +62,7 @@ export default function DashboardPage() {
           )}
         </div>
 
-        <aside className="panel p-6 flex flex-col">
+        <aside className="panel p-5 md:p-6 flex flex-col">
           <div className="flex items-center gap-2 text-sm text-inksoft">
             <BookOpen size={16} />
             {lessons.data ? `${doneCount} of ${lessons.data.length} lessons done` : "Lessons"}
@@ -105,7 +105,7 @@ export default function DashboardPage() {
         </aside>
       </section>
 
-      <section className="grid lg:grid-cols-[1fr_340px] gap-6 items-start [&>*]:min-w-0">
+      <section className="grid lg:grid-cols-[1fr_340px] gap-4 md:gap-6 items-start [&>*]:min-w-0">
         <div className="panel">
           <div className="panel-head">
             <h2 className="panel-title">Your stocks</h2>

@@ -6,7 +6,9 @@ import type { Position } from "@/types";
 
 export default function HoldingsTable({ positions }: { positions: Position[] }) {
   return (
-    <div className="overflow-x-auto">
+    <>
+      <HoldingsList positions={positions} />
+      <div className="hidden md:block overflow-x-auto">
       <table className="w-full min-w-[640px] text-sm num">
         <thead>
           <tr className="border-y border-line">
@@ -47,6 +49,34 @@ export default function HoldingsTable({ positions }: { positions: Position[] }) 
           ))}
         </tbody>
       </table>
-    </div>
+      </div>
+    </>
+  );
+}
+
+/** Phone layout: one tappable row per stock instead of a wide table. */
+function HoldingsList({ positions }: { positions: Position[] }) {
+  return (
+    <ul className="md:hidden border-t border-line divide-y divide-line/70 num">
+      {positions.map((p) => (
+        <li key={p.symbol}>
+          <Link href={`/trade?symbol=${p.symbol}`} className="flex items-center gap-3 px-4 py-3 active:bg-surface2">
+            <SymbolMark symbol={p.symbol} size={36} />
+            <span className="min-w-0 flex-1">
+              <span className="block font-semibold">{p.symbol}</span>
+              <span className="block text-[13px] text-inksoft truncate">
+                {shares(p.quantity)} shares at {money(p.current_price)}
+              </span>
+            </span>
+            <span className="text-right shrink-0">
+              <span className="block font-medium">{money(p.market_value)}</span>
+              <span className={`block text-[13px] ${tone(p.unrealized_pnl)}`}>
+                {signedMoney(p.unrealized_pnl)} ({pct(p.unrealized_pnl_percent)})
+              </span>
+            </span>
+          </Link>
+        </li>
+      ))}
+    </ul>
   );
 }
