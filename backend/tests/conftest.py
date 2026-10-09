@@ -50,8 +50,15 @@ class FakeDataClient:
         s = req.symbol_or_symbols
         if s not in self.prices:
             return SimpleNamespace(data={})
-        start = datetime(2026, 10, 7, 13, 30, tzinfo=timezone.utc)
-        bars = [_bar(self.prices[s] + i, start + timedelta(minutes=5 * i)) for i in range(5)]
+        unit = str(getattr(req.timeframe.unit, "value", req.timeframe.unit))
+        if unit in ("Min", "Minute", "Hour"):
+            # one session of 5-minute bars, most recent first market day
+            start = datetime(2026, 10, 7, 13, 30, tzinfo=timezone.utc)
+            bars = [_bar(self.prices[s] + i, start + timedelta(minutes=5 * i)) for i in range(5)]
+        else:
+            # one daily bar per day for the last 30 days, close rising by $1/day
+            today = datetime.now(timezone.utc).replace(hour=4, minute=0, second=0, microsecond=0)
+            bars = [_bar(self.prices[s] - 30 + i, today - timedelta(days=30 - i)) for i in range(30)]
         return SimpleNamespace(data={s: bars})
 
 

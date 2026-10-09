@@ -4,7 +4,7 @@
  */
 import type {
   Asset, Candle, ChartRange, Lesson, LessonCompleteResult, MarketStatus,
-  Order, OrderRequest, OrderStatus, Portfolio, Quote,
+  HistoryRange, Order, OrderRequest, OrderStatus, Portfolio, PortfolioHistory, Quote,
 } from "@/types";
 
 export const API_URL = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000").replace(/\/$/, "");
@@ -82,6 +82,7 @@ export const api = {
 
   // Account
   portfolio: () => request<Portfolio>("/portfolio"),
+  portfolioHistory: (range: HistoryRange) => request<PortfolioHistory>(`/portfolio/history?range=${range}`),
   resetPortfolio: () => request<Portfolio>("/portfolio/reset", { method: "POST" }),
   orders: (status?: OrderStatus) => request<Order[]>(`/orders${status ? `?status=${status}` : ""}`),
   placeOrder: (order: OrderRequest) => request<Order>("/orders", { method: "POST", body: JSON.stringify(order) }),

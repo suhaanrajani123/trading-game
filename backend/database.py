@@ -59,6 +59,14 @@ def init_db() -> None:
                 ddl_type = column.type.compile(dialect=engine.dialect)
                 conn.execute(text(f'ALTER TABLE "{table.name}" ADD COLUMN "{column.name}" {ddl_type}'))
 
+        # Players created before started_at existed: their portfolio began at
+        # their first order (or when they were created, if they never traded).
+        conn.execute(text(
+            'UPDATE users SET started_at = COALESCE('
+            '(SELECT MIN(o."timestamp") FROM orders o WHERE o.user_id = users.id), created_at, CURRENT_TIMESTAMP) '
+            'WHERE started_at IS NULL'
+        ))
+
         # Orders saved before order statuses existed were always immediate fills.
         conn.execute(text("UPDATE orders SET status = 'filled' WHERE status IS NULL"))
         conn.execute(text("UPDATE orders SET filled_at = \"timestamp\" WHERE filled_at IS NULL AND status = 'filled'"))

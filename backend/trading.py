@@ -220,6 +220,7 @@ def reset_account(db: Session, user: models.User) -> None:
     db.query(models.Order).filter(models.Order.user_id == user.id).delete()
     db.query(models.Position).filter(models.Position.user_id == user.id).delete()
     user.cash = config.STARTING_CASH
+    user.started_at = _now()
     db.commit()
 
 
