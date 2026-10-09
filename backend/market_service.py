@@ -332,17 +332,22 @@ def _fetch_bars(symbol: str, spec: RangeSpec, feed_name: str) -> List[Any]:
     return list(data.get(symbol, []))
 
 
-def get_history(symbol: str, range_: str = "1M") -> List[Dict[str, Any]]:
+def get_history(symbol: str, range_: str = "1M", feed: Optional[str] = None) -> List[Dict[str, Any]]:
+    """Candles for a range. `feed` overrides the configured history feed —
+    e.g. "iex" for intraday views that must include the last 15 minutes."""
     symbol = normalize_symbol(symbol)
     range_ = resolve_range(range_)
-    key = f"{symbol}:{range_}"
-    cached = _history.get(key, config.HISTORY_TTL)
+    first_feed = feed or config.ALPACA_HISTORY_FEED
+    key = f"{symbol}:{range_}:{first_feed}"
+    # Live intraday views refresh faster than the 5-minute default.
+    ttl = 60 if feed == "iex" and RANGES[range_].intraday else config.HISTORY_TTL
+    cached = _history.get(key, ttl)
     if cached is not None:
         return cached
 
     spec = RANGES[range_]
-    feeds = [config.ALPACA_HISTORY_FEED]
-    if config.ALPACA_HISTORY_FEED != "iex":
+    feeds = [first_feed]
+    if first_feed != "iex":
         feeds.append("iex")
 
     bars: List[Any] = []

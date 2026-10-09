@@ -75,11 +75,14 @@ def build_history(db: Session, user: models.User, range_: str = "ALL") -> Dict:
     symbols = sorted({f.symbol for f in fills})
 
     # --- price series per symbol: sorted keys + closes -----------------------
-    calendar = market.get_history(CALENDAR_SYMBOL, market_range)
+    # Intraday uses the real-time IEX feed; free SIP data lags 15 minutes, which
+    # would leave a brand-new account with nothing but a straight line.
+    feed = "iex" if intraday else None
+    calendar = market.get_history(CALENDAR_SYMBOL, market_range, feed)
     series: Dict[str, Tuple[List[TimeKey], List[float]]] = {}
     for sym in symbols:
         try:
-            bars = market.get_history(sym, market_range)
+            bars = market.get_history(sym, market_range, feed)
         except market.MarketDataError:
             bars = []
         series[sym] = ([b["time"] for b in bars], [b["close"] for b in bars])

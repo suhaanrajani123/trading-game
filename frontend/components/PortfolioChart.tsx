@@ -32,6 +32,7 @@ const dayFmt = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric"
 const timeFmt = new Intl.DateTimeFormat("en-US", {
   month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZone: "America/New_York",
 });
+const etTick = new Intl.DateTimeFormat("en-US", { hour: "numeric", minute: "2-digit", timeZone: "America/New_York" });
 const labelFor = (t: string | number) =>
   typeof t === "number" ? `${timeFmt.format(new Date(t * 1000))} ET` : dayFmt.format(new Date(`${t}T12:00:00Z`));
 
@@ -96,6 +97,8 @@ export default function PortfolioChart() {
     const up = last >= first;
     const accent = rgb(up ? "gain" : "loss");
     const intraday = Boolean(data?.intraday);
+    const totals = points.map((p) => p.total);
+    const spread = Math.max(...totals, data?.starting_cash ?? 0) - Math.min(...totals, data?.starting_cash ?? Infinity);
     const toTime = (t: string | number) => (typeof t === "number" ? (t as UTCTimestamp) : t) as Time;
 
     const chart = createChart(ref.current, {
@@ -108,7 +111,17 @@ export default function PortfolioChart() {
       },
       grid: { vertLines: { visible: false }, horzLines: { color: css(rgb("line"), 0.7) } },
       rightPriceScale: { borderVisible: false, scaleMargins: { top: 0.1, bottom: mode === "stocks" ? 0 : 0.08 } },
-      timeScale: { borderVisible: false, timeVisible: intraday, secondsVisible: false, fixLeftEdge: true, fixRightEdge: true },
+      timeScale: {
+        borderVisible: false,
+        timeVisible: intraday,
+        secondsVisible: false,
+        fixLeftEdge: true,
+        fixRightEdge: true,
+        // Market time (ET), not UTC
+        tickMarkFormatter: intraday
+          ? (t: Time) => etTick.format(new Date((t as number) * 1000))
+          : undefined,
+      },
       crosshair: {
         mode: CrosshairMode.Magnet,
         vertLine: { color: css(rgb("ink-soft"), 0.4), labelVisible: false },
@@ -116,7 +129,11 @@ export default function PortfolioChart() {
       },
       localization: {
         locale: "en-US",
-        priceFormatter: (p: number) => `$${Math.round(p).toLocaleString("en-US")}`,
+        // Show cents when the account has barely moved, so labels don't repeat.
+        priceFormatter: (p: number) =>
+          spread < 200
+            ? `$${p.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+            : `$${Math.round(p).toLocaleString("en-US")}`,
       },
       handleScale: false,
       handleScroll: false,
