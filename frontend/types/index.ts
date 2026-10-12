@@ -139,6 +139,9 @@ export interface PortfolioHistory {
   starting_cash: number;
   symbols: string[];
   points: HistoryPoint[];
+  market_open: boolean;
+  /** what "change" is measured from: starting cash, or the first point in range */
+  baseline: number;
   change: number;
   change_percent: number;
 }

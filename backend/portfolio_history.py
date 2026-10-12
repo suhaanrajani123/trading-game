@@ -118,8 +118,8 @@ def build_history(db: Session, user: models.User, range_: str = "ALL") -> Dict:
                 held[f.symbol] = held.get(f.symbol, 0.0) - qty
             last_price[f.symbol] = px
             fi += 1
-        if key < start_key and not (intraday and key + bar_seconds > start_key):
-            continue  # before this portfolio existed
+        if key < start_key:
+            continue  # before this portfolio existed (the start anchor covers it)
         holdings = {}
         for sym, qty in held.items():
             if qty > EPSILON:
@@ -131,25 +131,48 @@ def build_history(db: Session, user: models.User, range_: str = "ALL") -> Dict:
             "total": round(cash + sum(holdings.values()), 2),
         })
 
-    # --- anchor the start and the live "now" ---------------------------------
-    if not points or points[0]["time"] > start_key:
-        points.insert(0, {"time": start_key, "cash": config.STARTING_CASH, "holdings": {}, "total": config.STARTING_CASH})
+    # --- anchor the start ----------------------------------------------------
+    # If this range reaches back to when the portfolio began, the chart starts
+    # at exactly the starting cash, at that moment.
+    covers_start = not calendar or start_key >= calendar[0]["time"]
+    start_point = {"time": start_key, "cash": config.STARTING_CASH, "holdings": {}, "total": config.STARTING_CASH}
+    if covers_start:
+        if not points or points[0]["time"] > start_key:
+            points.insert(0, start_point)
+        elif points[0]["time"] == start_key:
+            # The first session already closed with trades in it; put the
+            # $100k anchor just before it (two points can't share a time).
+            before = (
+                start_key - 60
+                if intraday
+                else (datetime.strptime(start_key, "%Y-%m-%d") - timedelta(days=1)).strftime("%Y-%m-%d")
+            )
+            points.insert(0, {**start_point, "time": before})
 
+    # --- the live "now" ------------------------------------------------------
     live = build_portfolio(db, user)
-    now_key = _key_for(datetime.now(timezone.utc), intraday)
     now_point = {
-        "time": now_key,
+        "time": _key_for(datetime.now(timezone.utc), intraday),
         "cash": live["cash"],
         "holdings": {p["symbol"]: p["market_value"] for p in live["positions"]},
         "total": live["total_equity"],
     }
-    if points and points[-1]["time"] >= now_key:
+    try:
+        market_open = bool(market.market_status()["is_open"])
+    except market.MarketDataError:
+        market_open = True
+    if not points:
+        points.append(now_point)
+    elif not market_open or points[-1]["time"] >= now_point["time"]:
+        # Market closed (nights/weekends): prices can't move, so update the last
+        # session's point instead of drawing a flat line out to "now".
         points[-1] = {**now_point, "time": points[-1]["time"]}
     else:
         points.append(now_point)
 
     all_symbols = sorted({s for p in points for s in p["holdings"]})
-    first, last = points[0]["total"], points[-1]["total"]
+    first = config.STARTING_CASH if covers_start else points[0]["total"]
+    last = points[-1]["total"]
     return {
         "range": range_,
         "resolution": market_range,
@@ -158,6 +181,10 @@ def build_history(db: Session, user: models.User, range_: str = "ALL") -> Dict:
         "starting_cash": config.STARTING_CASH,
         "symbols": all_symbols,
         "points": points,
+        "market_open": market_open,
+        # What the change is measured from: starting cash if the range reaches
+        # back to the start, otherwise the first point in the range.
+        "baseline": round(first, 2),
         "change": round(last - first, 2),
         "change_percent": round((last - first) / first * 100, 2) if first else 0.0,
     }

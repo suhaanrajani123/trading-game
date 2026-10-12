@@ -9,6 +9,7 @@ import StockChart from "@/components/StockChart";
 import SymbolMark from "@/components/SymbolMark";
 import { api, emitPortfolioChanged } from "@/lib/api";
 import { useDebounced, useMediaQuery, useResource } from "@/lib/hooks";
+import { useDayLabel } from "@/lib/market";
 import { POPULAR_STOCKS, knownName } from "@/lib/popularStocks";
 import { compactNum, money, pct, shares, signedMoney, tone } from "@/lib/format";
 import type { ChartRange, Quote } from "@/types";
@@ -191,6 +192,7 @@ function SymbolView({ symbol }: { symbol: string }) {
   const [range, setRange] = useState<ChartRange>("1M");
   const { portfolio } = useAccount();
   const isPhone = useMediaQuery("(max-width: 767px)");
+  const dayLabel = useDayLabel();
   const chartHeight = isPhone ? 260 : 380;
   const quote = useResource(() => api.quote(symbol), [symbol], { intervalMs: 20_000 });
   const history = useResource(() => api.history(symbol, range), [symbol, range]);
@@ -237,7 +239,7 @@ function SymbolView({ symbol }: { symbol: string }) {
                 <p className="font-display text-[30px] md:text-[34px] leading-none font-semibold">{money(q.price)}</p>
                 <p className={`mt-1.5 text-[15px] ${tone(range === "1D" || rangeChange == null ? q.change : rangeChange)}`}>
                   {range === "1D" || rangeChange == null
-                    ? `${signedMoney(q.change)} (${pct(q.change_percent)}) today`
+                    ? `${signedMoney(q.change)} (${pct(q.change_percent)}) ${dayLabel}`
                     : `${signedMoney(rangeChange)} (${pct(rangePct ?? 0)}) past ${rangeLabel(range)}`}
                 </p>
               </>

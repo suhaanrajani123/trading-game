@@ -66,3 +66,28 @@ def test_reset_restarts_history(client):
 
 def test_bad_range_is_rejected(client):
     assert client.get("/portfolio/history?range=10Y").status_code == 422
+
+
+def test_change_is_measured_from_starting_cash(client, prices):
+    client.post("/orders", json={"symbol": "AAPL", "side": "buy", "quantity": 10})
+    _backdate("test-player-1", 20)
+    prices["AAPL"] = 210.0
+    from market_service import clear_caches
+    clear_caches()
+    h = client.get("/portfolio/history?range=ALL").json()
+    live = client.get("/portfolio").json()
+    assert h["baseline"] == 100_000
+    assert h["points"][0]["total"] == 100_000  # starts exactly at the start
+    assert h["change"] == live["total_return"]  # matches "all time" on the dashboard
+
+
+def test_market_closed_does_not_add_a_point_at_now(client, monkeypatch):
+    import market_service
+    monkeypatch.setattr(market_service, "market_status", lambda: {"is_open": False, "next_open": None, "next_close": None})
+    client.post("/orders", json={"symbol": "AAPL", "side": "buy", "quantity": 10})
+    _backdate("test-player-1", 20)
+    h = client.get("/portfolio/history?range=1M").json()
+    assert h["market_open"] is False
+    # last point stays on the last trading day, but carries the live value
+    assert h["points"][-1]["time"] <= datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    assert h["points"][-1]["total"] == client.get("/portfolio").json()["total_equity"]

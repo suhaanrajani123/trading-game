@@ -92,7 +92,7 @@ export default function PortfolioChart() {
     const surface = rgb("surface");
     const primary = rgb("primary");
     const marker = rgb("marker");
-    const first = points[0].total;
+    const first = data?.baseline ?? points[0].total;
     const last = points[points.length - 1].total;
     const up = last >= first;
     const accent = rgb(up ? "gain" : "loss");
@@ -194,10 +194,10 @@ export default function PortfolioChart() {
       chart.remove();
       chartRef.current = null;
     };
-  }, [points, layers, mode, data?.intraday, data?.starting_cash, themeTick]);
+  }, [points, layers, mode, data?.intraday, data?.starting_cash, data?.baseline, themeTick]);
 
   const shown = hover != null ? points[hover] : points[points.length - 1];
-  const base = points[0]?.total ?? 0;
+  const base = data?.baseline ?? points[0]?.total ?? 0;
   const delta = shown ? shown.total - base : 0;
 
   return (
@@ -263,4 +263,4 @@ export default function PortfolioChart() {
 }
 
 const rangeLabel = (r: HistoryRange) =>
-  ({ "1D": "today", "1W": "past week", "1M": "past month", "3M": "past 3 months", "1Y": "past year", ALL: "since you started" })[r];
+  ({ "1D": "latest session", "1W": "past week", "1M": "past month", "3M": "past 3 months", "1Y": "past year", ALL: "since you started" })[r];

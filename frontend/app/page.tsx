@@ -9,11 +9,13 @@ import ServerError from "@/components/ServerError";
 import Watchlist from "@/components/Watchlist";
 import { api } from "@/lib/api";
 import { useResource } from "@/lib/hooks";
+import { useDayLabel } from "@/lib/market";
 import { money, moneyWhole, pct, signedMoney, tone } from "@/lib/format";
 
 export default function DashboardPage() {
   const { portfolio: p, error } = useAccount();
   const lessons = useResource(api.lessons, []);
+  const dayLabel = useDayLabel();
   const upcoming = lessons.data?.filter((l) => !l.completed).slice(0, 4) ?? [];
   const nextLesson = upcoming[0] ?? null;
   const doneCount = lessons.data?.filter((l) => l.completed).length ?? 0;
@@ -35,7 +37,7 @@ export default function DashboardPage() {
                   <span className={tone(p.day_change)}>
                     {signedMoney(p.day_change)} ({pct(p.day_change_percent)})
                   </span>{" "}
-                  <span className="text-inksoft">today</span>
+                  <span className="text-inksoft">{dayLabel}</span>
                 </p>
                 <p>
                   <span className={tone(p.total_return)}>

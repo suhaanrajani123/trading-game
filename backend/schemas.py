@@ -162,5 +162,7 @@ class PortfolioHistoryOut(BaseModel):
     starting_cash: float
     symbols: List[str]
     points: List[HistoryPointOut]
+    market_open: bool
+    baseline: float
     change: float
     change_percent: float
